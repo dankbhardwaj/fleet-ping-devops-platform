@@ -1,9 +1,39 @@
+# ==========================
+# Node.js
+# ==========================
 node_modules/
 
+# Environment Files
 .env
+.env.local
+.env.development
+.env.production
 
+# Logs
+logs/
 *.log
+npm-debug.log*
 
+# Coverage
 coverage/
 
+# Build
 dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+
+# Docker
+docker-compose.override.yml
