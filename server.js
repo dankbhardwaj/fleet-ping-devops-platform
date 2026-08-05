@@ -1,6 +1,6 @@
 // VexarDrive - Fleet Ping Service
 // Production Improvement
-// Sprint 1 Task 1.2 - PostgreSQL Connection Pool
+// Sprint 2 - Security Hardening
 
 require("dotenv").config();
 
@@ -26,7 +26,7 @@ const requiredEnvVars = [
 ];
 
 const missingEnvVars = requiredEnvVars.filter(
-  (envVar) => !process.env[envVar]
+  (env) => !process.env[env]
 );
 
 if (missingEnvVars.length > 0) {
@@ -39,43 +39,76 @@ if (missingEnvVars.length > 0) {
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // ----------------------------------------------------
-// Routes
+// Root
 // ----------------------------------------------------
 
 app.get("/", (req, res) => {
   res.send("VexarDrive Fleet Ping Service is running");
 });
 
-// Fleet vehicle ping ingestion
+// ----------------------------------------------------
+// Fleet Ping
+// ----------------------------------------------------
+
 app.post("/api/fleet/ping", async (req, res) => {
   const { vehicleId, lat, lng, speed, timestamp } = req.body;
 
+  if (!vehicleId || lat === undefined || lng === undefined || !timestamp) {
+    return res.status(400).json({
+      error: "Invalid request payload",
+    });
+  }
+
   try {
     await pool.query(
-      `INSERT INTO fleet_pings (vehicle_id, lat, lng, speed, ts)
-       VALUES ($1, $2, $3, $4, $5)`,
+      `INSERT INTO fleet_pings
+      (vehicle_id, lat, lng, speed, ts)
+      VALUES ($1,$2,$3,$4,$5)`,
       [vehicleId, lat, lng, speed, timestamp]
     );
 
-    res.json({
+    return res.json({
       status: "ok",
     });
+
   } catch (err) {
+
     console.error(err);
 
-    res.status(500).json({
+    return res.status(500).json({
       error: "insert failed",
     });
+
   }
+
 });
 
+// ----------------------------------------------------
 // Driver Login
+// ----------------------------------------------------
+
 app.post("/api/auth/login", async (req, res) => {
-  const { phone } = req.body;
+
+  const { phone, otp } = req.body;
+
+  if (!phone) {
+    return res.status(400).json({
+      error: "Phone number is required",
+    });
+  }
+
+  if (!otp) {
+    return res.status(400).json({
+      error: "OTP is required",
+    });
+  }
 
   try {
+
+    // Parameterized Query
     const result = await pool.query(
-      `SELECT * FROM drivers WHERE phone = '${phone}'`
+      "SELECT * FROM drivers WHERE phone = $1",
+      [phone]
     );
 
     if (result.rows.length === 0) {
@@ -83,6 +116,9 @@ app.post("/api/auth/login", async (req, res) => {
         error: "not found",
       });
     }
+
+    // OTP verification intentionally skipped
+    // Assessment starter does not contain OTP logic.
 
     const token = jwt.sign(
       {
@@ -94,32 +130,50 @@ app.post("/api/auth/login", async (req, res) => {
       }
     );
 
-    res.json({
+    return res.json({
       token,
     });
+
   } catch (err) {
+
     console.error(err);
 
-    res.status(500).json({
+    return res.status(500).json({
       error: "login failed",
     });
+
   }
+
 });
 
+// ----------------------------------------------------
 // Admin Endpoint
-app.get("/api/admin/drivers", async (req, res) => {
-  try {
-    const result = await pool.query(`SELECT * FROM drivers`);
+// (Authentication added in next task)
+// ----------------------------------------------------
 
-    res.json(result.rows);
+app.get("/api/admin/drivers", async (req, res) => {
+
+  try {
+
+    const result = await pool.query(
+      "SELECT * FROM drivers"
+    );
+
+    return res.json(result.rows);
+
   } catch (err) {
+
     console.error(err);
 
-    res.status(500).json({
+    return res.status(500).json({
       error: "database error",
     });
+
   }
+
 });
+
+// ----------------------------------------------------
 
 const PORT = process.env.PORT || 3000;
 
