@@ -1,12 +1,12 @@
 // VexarDrive - Fleet Ping Service
-// Production Improvement - Sprint 1 Task 1.1
-// Configuration Externalization
+// Production Improvement
+// Sprint 1 Task 1.2 - PostgreSQL Connection Pool
 
 require("dotenv").config();
 
 const express = require("express");
-const { Client } = require("pg");
 const jwt = require("jsonwebtoken");
+const pool = require("./config/db");
 
 const app = express();
 
@@ -36,22 +36,6 @@ if (missingEnvVars.length > 0) {
   process.exit(1);
 }
 
-// ----------------------------------------------------
-// Database Configuration
-// ----------------------------------------------------
-
-const DB_CONFIG = {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-};
-
-// ----------------------------------------------------
-// JWT Configuration
-// ----------------------------------------------------
-
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // ----------------------------------------------------
@@ -66,12 +50,8 @@ app.get("/", (req, res) => {
 app.post("/api/fleet/ping", async (req, res) => {
   const { vehicleId, lat, lng, speed, timestamp } = req.body;
 
-  const client = new Client(DB_CONFIG);
-
   try {
-    await client.connect();
-
-    await client.query(
+    await pool.query(
       `INSERT INTO fleet_pings (vehicle_id, lat, lng, speed, ts)
        VALUES ($1, $2, $3, $4, $5)`,
       [vehicleId, lat, lng, speed, timestamp]
@@ -86,57 +66,59 @@ app.post("/api/fleet/ping", async (req, res) => {
     res.status(500).json({
       error: "insert failed",
     });
-  } finally {
-    await client.end();
   }
 });
 
 // Driver Login
 app.post("/api/auth/login", async (req, res) => {
-  const { phone, otp } = req.body;
+  const { phone } = req.body;
 
-  const client = new Client(DB_CONFIG);
+  try {
+    const result = await pool.query(
+      `SELECT * FROM drivers WHERE phone = '${phone}'`
+    );
 
-  await client.connect();
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        error: "not found",
+      });
+    }
 
-  const result = await client.query(
-    `SELECT * FROM drivers WHERE phone = '${phone}'`
-  );
+    const token = jwt.sign(
+      {
+        driverId: result.rows[0].id,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "30d",
+      }
+    );
 
-  await client.end();
+    res.json({
+      token,
+    });
+  } catch (err) {
+    console.error(err);
 
-  if (result.rows.length === 0) {
-    return res.status(401).json({
-      error: "not found",
+    res.status(500).json({
+      error: "login failed",
     });
   }
-
-  const token = jwt.sign(
-    {
-      driverId: result.rows[0].id,
-    },
-    JWT_SECRET,
-    {
-      expiresIn: "30d",
-    }
-  );
-
-  res.json({
-    token,
-  });
 });
 
 // Admin Endpoint
 app.get("/api/admin/drivers", async (req, res) => {
-  const client = new Client(DB_CONFIG);
+  try {
+    const result = await pool.query(`SELECT * FROM drivers`);
 
-  await client.connect();
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
 
-  const result = await client.query(`SELECT * FROM drivers`);
-
-  await client.end();
-
-  res.json(result.rows);
+    res.status(500).json({
+      error: "database error",
+    });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
