@@ -110,6 +110,31 @@ Implemented JWT authentication middleware and protected the administrative API.
 - Supports secure API communication
 - Follows production security practices
 
+## Improvement 8 - Health & Readiness Endpoints
+
+### Issue
+
+The application did not expose endpoints for health monitoring or readiness verification.
+
+### Risk
+
+Container orchestration platforms could not determine whether the application was healthy or ready to receive traffic.
+
+### Solution
+
+Added:
+
+- `/health`
+- `/ready`
+
+The readiness endpoint verifies PostgreSQL connectivity before reporting the service as ready.
+
+### Benefit
+
+- Supports Azure Container Apps health probes
+- Supports AKS liveness/readiness probes
+- Improves operational monitoring
+
 # Remaining Issues
 
 The following production improvements are intentionally scheduled for later implementation:

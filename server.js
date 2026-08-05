@@ -1,6 +1,6 @@
 // VexarDrive - Fleet Ping Service
 // Production Improvements
-// Sprint 3 - JWT Authentication
+// Sprint 4 - Health & Readiness
 
 require("dotenv").config();
 
@@ -45,6 +45,46 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 app.get("/", (req, res) => {
   res.send("VexarDrive Fleet Ping Service is running");
+});
+
+// ----------------------------------------------------
+// Health Endpoint
+// ----------------------------------------------------
+
+app.get("/health", (req, res) => {
+  return res.status(200).json({
+    status: "UP",
+    service: "fleet-ping-service",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ----------------------------------------------------
+// Readiness Endpoint
+// ----------------------------------------------------
+
+app.get("/ready", async (req, res) => {
+
+  try {
+
+    await pool.query("SELECT 1");
+
+    return res.status(200).json({
+      status: "READY",
+      database: "connected",
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(503).json({
+      status: "NOT_READY",
+      database: "unreachable",
+    });
+
+  }
+
 });
 
 // ----------------------------------------------------

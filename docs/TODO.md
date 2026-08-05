@@ -10,8 +10,8 @@
 
 ## Observability
 
-- Health endpoint
-- Readiness endpoint
+
+
 - Structured logging
 
 ---
