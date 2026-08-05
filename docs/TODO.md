@@ -2,7 +2,7 @@
 
 ## Security
 
-- Protect admin endpoint with JWT authentication
+
 - Implement role-based authorization
 - Improve JWT validation
 

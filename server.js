@@ -1,19 +1,20 @@
 // VexarDrive - Fleet Ping Service
-// Production Improvement
-// Sprint 2 - Security Hardening
+// Production Improvements
+// Sprint 3 - JWT Authentication
 
 require("dotenv").config();
 
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const pool = require("./config/db");
+const authenticateToken = require("./middleware/auth");
 
 const app = express();
 
 app.use(express.json());
 
 // ----------------------------------------------------
-// Validate Required Environment Variables
+// Validate Environment Variables
 // ----------------------------------------------------
 
 const requiredEnvVars = [
@@ -25,13 +26,13 @@ const requiredEnvVars = [
   "JWT_SECRET",
 ];
 
-const missingEnvVars = requiredEnvVars.filter(
+const missing = requiredEnvVars.filter(
   (env) => !process.env[env]
 );
 
-if (missingEnvVars.length > 0) {
+if (missing.length > 0) {
   console.error(
-    `Missing required environment variables: ${missingEnvVars.join(", ")}`
+    `Missing environment variables: ${missing.join(", ")}`
   );
   process.exit(1);
 }
@@ -51,6 +52,7 @@ app.get("/", (req, res) => {
 // ----------------------------------------------------
 
 app.post("/api/fleet/ping", async (req, res) => {
+
   const { vehicleId, lat, lng, speed, timestamp } = req.body;
 
   if (!vehicleId || lat === undefined || lng === undefined || !timestamp) {
@@ -60,6 +62,7 @@ app.post("/api/fleet/ping", async (req, res) => {
   }
 
   try {
+
     await pool.query(
       `INSERT INTO fleet_pings
       (vehicle_id, lat, lng, speed, ts)
@@ -105,7 +108,6 @@ app.post("/api/auth/login", async (req, res) => {
 
   try {
 
-    // Parameterized Query
     const result = await pool.query(
       "SELECT * FROM drivers WHERE phone = $1",
       [phone]
@@ -116,9 +118,6 @@ app.post("/api/auth/login", async (req, res) => {
         error: "not found",
       });
     }
-
-    // OTP verification intentionally skipped
-    // Assessment starter does not contain OTP logic.
 
     const token = jwt.sign(
       {
@@ -147,31 +146,34 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 // ----------------------------------------------------
-// Admin Endpoint
-// (Authentication added in next task)
+// Protected Admin Endpoint
 // ----------------------------------------------------
 
-app.get("/api/admin/drivers", async (req, res) => {
+app.get(
+  "/api/admin/drivers",
+  authenticateToken,
+  async (req, res) => {
 
-  try {
+    try {
 
-    const result = await pool.query(
-      "SELECT * FROM drivers"
-    );
+      const result = await pool.query(
+        "SELECT * FROM drivers"
+      );
 
-    return res.json(result.rows);
+      return res.json(result.rows);
 
-  } catch (err) {
+    } catch (err) {
 
-    console.error(err);
+      console.error(err);
 
-    return res.status(500).json({
-      error: "database error",
-    });
+      return res.status(500).json({
+        error: "database error",
+      });
+
+    }
 
   }
-
-});
+);
 
 // ----------------------------------------------------
 

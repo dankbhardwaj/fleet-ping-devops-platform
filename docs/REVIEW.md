@@ -90,6 +90,26 @@ Added validation for required request fields.
 
 ---
 
+## Improvement 7 - JWT Authentication
+
+### Issue
+
+The administrative endpoint was publicly accessible without authentication.
+
+### Risk
+
+Any user could retrieve all driver records.
+
+### Solution
+
+Implemented JWT authentication middleware and protected the administrative API.
+
+### Benefit
+
+- Prevents unauthorized access
+- Supports secure API communication
+- Follows production security practices
+
 # Remaining Issues
 
 The following production improvements are intentionally scheduled for later implementation:
