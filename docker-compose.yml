@@ -1,45 +1,73 @@
 services:
+
   app:
-    build: .
+
+    build:
+      context: .
+      dockerfile: Dockerfile
 
     ports:
       - "3000:3000"
 
-    env_file:
-      - .env
-
-    environment:
-      DB_HOST: db
-      NODE_ENV: production
+    restart: unless-stopped
 
     depends_on:
+
       db:
         condition: service_healthy
 
-    restart: unless-stopped
+    environment:
+
+      PORT: 3000
+
+      NODE_ENV: production
+
+      DB_HOST: db
+
+      DB_PORT: 5432
+
+      DB_NAME: vexar_fleet
+
+      DB_USER: vexaradmin
+
+      DB_PASSWORD: change_me
+
+      JWT_SECRET: change_this_secret
 
   db:
+
     image: postgres:15
-
-    environment:
-      POSTGRES_DB: vexar_fleet
-      POSTGRES_USER: vexaradmin
-      POSTGRES_PASSWORD: change_me
-
-    ports:
-      - "5432:5432"
-
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vexaradmin -d vexar_fleet"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
     restart: unless-stopped
 
+    environment:
+
+      POSTGRES_DB: vexar_fleet
+
+      POSTGRES_USER: vexaradmin
+
+      POSTGRES_PASSWORD: change_me
+
+    volumes:
+
+      - pgdata:/var/lib/postgresql/data
+
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+    healthcheck:
+
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U vexaradmin -d vexar_fleet"
+        ]
+
+      interval: 10s
+
+      timeout: 5s
+
+      retries: 5
+
 volumes:
+
   pgdata:

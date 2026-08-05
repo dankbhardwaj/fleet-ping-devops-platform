@@ -1,29 +1,5 @@
 # Remaining Improvements
 
-## Security
-
-
-- Implement role-based authorization
-- Improve JWT validation
-
----
-
-## Observability
-
-
-
-- Structured logging
-
----
-
-## Docker
-
-- Multi-stage Dockerfile
-- Non-root user
-- Smaller base image
-- Container health checks
-
----
 
 ## CI/CD
 

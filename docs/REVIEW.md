@@ -135,6 +135,29 @@ The readiness endpoint verifies PostgreSQL connectivity before reporting the ser
 - Supports AKS liveness/readiness probes
 - Improves operational monitoring
 
+## Improvement 9 - Production Dockerfile
+
+### Issue
+
+The original Dockerfile used the latest Node.js image, ran as the root user, exposed unnecessary ports, and lacked container health checks.
+
+### Solution
+
+Implemented a production-grade Dockerfile using:
+
+- Multi-stage build
+- Node 22 Alpine image
+- Non-root user
+- Docker HEALTHCHECK
+- Optimized dependency installation
+
+### Benefit
+
+- Smaller image
+- Better security
+- Faster deployments
+- Improved container reliability
+
 # Remaining Issues
 
 The following production improvements are intentionally scheduled for later implementation:
