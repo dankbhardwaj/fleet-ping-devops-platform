@@ -4,7 +4,16 @@
 
 This document explains the engineering decisions made while improving the Fleet Ping Service for production deployment.
 
-Each decision was made by considering security, maintainability, scalability, operational simplicity, and cost.
+Each decision was made by considering:
+
+- Security
+- Maintainability
+- Scalability
+- Operational simplicity
+- Reliability
+- Cost efficiency
+
+The goal is to document **why** architectural decisions were made instead of only documenting **what** was implemented.
 
 ---
 
@@ -16,13 +25,14 @@ Use environment variables instead of hardcoded configuration.
 
 ## Why?
 
-The original application stored database credentials and JWT secrets directly in the source code.
+The original application stored database credentials and JWT secrets directly inside the source code.
 
-Hardcoded secrets are one of the highest security risks in production because they:
+Hardcoded secrets:
 
 - expose credentials in source control
 - cannot be rotated easily
-- prevent environment-specific configuration
+- prevent environment-specific deployments
+- increase security risks
 
 ## Alternatives Considered
 
@@ -33,9 +43,9 @@ Both were rejected because they expose sensitive information.
 
 ## Production Approach
 
-Environment variables are used today.
+Configuration is now externalized using environment variables.
 
-The design also prepares the application for Azure Key Vault integration in later phases.
+The design also prepares the application for Azure Key Vault integration.
 
 ---
 
@@ -43,24 +53,24 @@ The design also prepares the application for Azure Key Vault integration in late
 
 ## Decision
 
-Use `pg.Pool` instead of creating a new database connection for every request.
+Use PostgreSQL connection pooling (`pg.Pool`).
 
 ## Why?
 
-Opening a database connection for every request is expensive.
+Creating a new database connection for every request does not scale.
 
 Connection pooling:
 
 - reduces latency
 - improves throughput
 - prevents connection exhaustion
-- scales better during traffic spikes
+- improves application scalability
 
 ## Alternatives Considered
 
-Creating a new connection per request.
+Creating a new PostgreSQL connection for every request.
 
-Rejected because it does not scale in production.
+Rejected because it performs poorly under production workloads.
 
 ---
 
@@ -68,15 +78,17 @@ Rejected because it does not scale in production.
 
 ## Decision
 
-Replace string-built SQL queries with parameterized queries.
+Replace dynamic SQL with parameterized queries.
 
 ## Why?
 
-Parameterized queries prevent SQL Injection attacks by separating SQL statements from user input.
+Parameterized queries eliminate SQL Injection attacks by separating SQL statements from user input.
 
-## Security Benefit
+## Benefits
 
-Protects database integrity while following secure coding practices.
+- Improved application security
+- Database integrity protection
+- Secure coding best practices
 
 ---
 
@@ -84,17 +96,18 @@ Protects database integrity while following secure coding practices.
 
 ## Decision
 
-Validate incoming API requests before executing business logic.
+Validate incoming request payloads before executing business logic.
 
 ## Why?
 
-Invalid requests should fail immediately rather than reaching the database.
+Invalid requests should never reach the database.
 
 Benefits include:
 
-- better API reliability
-- improved error handling
-- protection against malformed requests
+- Better API reliability
+- Cleaner error handling
+- Reduced invalid data
+- More predictable behavior
 
 ---
 
@@ -102,21 +115,22 @@ Benefits include:
 
 ## Decision
 
-Protect administrative endpoints using JWT authentication.
+Protect administrative APIs using JWT authentication.
 
 ## Why?
 
-Administrative APIs should never be publicly accessible.
+Administrative endpoints should never be publicly accessible.
 
 JWT authentication provides:
 
-- stateless authentication
-- scalability
-- compatibility with cloud-native applications
+- Stateless authentication
+- Cloud-native compatibility
+- Horizontal scalability
+- Simpler deployment
 
 ## Future Improvement
 
-Implement role-based authorization (RBAC) so administrative privileges are separated from standard users.
+Introduce Role-Based Access Control (RBAC).
 
 ---
 
@@ -136,17 +150,18 @@ Indicates whether the application process is running.
 
 ### Readiness
 
-Indicates whether the application can safely receive production traffic.
+Indicates whether the application is capable of serving production traffic.
 
-The readiness endpoint verifies PostgreSQL connectivity before reporting READY.
+The readiness endpoint verifies PostgreSQL connectivity before returning READY.
 
-## Benefit
+## Benefits
 
-Supports:
+Compatible with:
 
 - Azure Container Apps
 - Azure Kubernetes Service (AKS)
-- Docker health checks
+- Docker HEALTHCHECK
+- Load Balancers
 
 ---
 
@@ -158,13 +173,14 @@ Use a multi-stage Docker build.
 
 ## Why?
 
-Multi-stage builds reduce image size by excluding unnecessary build artifacts from the runtime image.
+Multi-stage builds separate dependency installation from the runtime image.
 
-Benefits include:
+Benefits:
 
-- faster image downloads
-- faster deployments
-- reduced attack surface
+- Smaller image
+- Faster deployments
+- Reduced attack surface
+- Cleaner runtime image
 
 ---
 
@@ -176,25 +192,26 @@ Run the application as a non-root user.
 
 ## Why?
 
-Running containers as root increases the impact of a container compromise.
+Running containers as root increases the impact of container compromise.
 
-Following the principle of least privilege improves container security.
+Following the principle of least privilege improves overall container security.
 
 ---
 
-# 9. Alpine Linux Base Image
+# 9. Node.js Alpine Runtime
 
 ## Decision
 
-Use Node.js 22 Alpine.
+Use the official Node.js Alpine image.
 
 ## Why?
 
-Compared with standard Node.js images, Alpine provides:
+Compared to standard Node.js images, Alpine provides:
 
-- significantly smaller image size
-- reduced attack surface
-- faster container startup
+- Smaller image size
+- Reduced attack surface
+- Faster downloads
+- Faster startup
 
 ---
 
@@ -208,19 +225,19 @@ Use Docker service discovery instead of localhost.
 
 Containers communicate through Docker's internal network.
 
-The application connects to PostgreSQL using:
+Instead of:
+
+```
+DB_HOST=localhost
+```
+
+Docker containers use:
 
 ```
 DB_HOST=db
 ```
 
-instead of:
-
-```
-localhost
-```
-
-This reflects how services communicate inside production container platforms.
+This reflects production container networking.
 
 ---
 
@@ -228,13 +245,13 @@ This reflects how services communicate inside production container platforms.
 
 ## Decision
 
-Separate local development configuration from Docker configuration.
+Maintain separate configurations for local development and Docker.
 
 ## Why?
 
-Local execution and Docker execution require different database hosts.
+Local execution and container execution require different database hosts.
 
-Local development:
+Local:
 
 ```
 DB_HOST=localhost
@@ -246,7 +263,11 @@ Docker:
 DB_HOST=db
 ```
 
-Keeping separate environment configurations improves portability and reduces deployment mistakes.
+Benefits:
+
+- Better portability
+- Easier onboarding
+- Reduced deployment mistakes
 
 ---
 
@@ -254,17 +275,17 @@ Keeping separate environment configurations improves portability and reduces dep
 
 ## Decision
 
-Automatically initialize the PostgreSQL schema during container startup.
+Automatically initialize PostgreSQL during container startup.
 
 ## Why?
 
-A developer should be able to clone the repository and start the application without manually creating database tables.
+A developer should be able to clone the repository and immediately start the application.
 
 Benefits:
 
-- faster onboarding
-- consistent environments
-- repeatable deployments
+- Faster onboarding
+- Consistent environments
+- Repeatable deployments
 
 ---
 
@@ -272,33 +293,184 @@ Benefits:
 
 ## Decision
 
-Configure Docker health checks for the application and PostgreSQL.
+Configure Docker health checks for both the application and PostgreSQL.
 
 ## Why?
 
-Health checks allow Docker and container orchestrators to detect unhealthy services automatically.
+Health checks allow container platforms to determine service health automatically.
 
-Benefits include:
+Benefits:
 
-- automatic recovery
-- safer deployments
-- improved availability
+- Automatic recovery
+- Improved reliability
+- Safer deployments
+
+---
+
+# 14. Infrastructure as Code
+
+## Decision
+
+Provision Azure infrastructure using Terraform.
+
+## Why?
+
+Infrastructure should be version controlled exactly like application code.
+
+Benefits:
+
+- Version-controlled infrastructure
+- Repeatable deployments
+- Easier disaster recovery
+- Peer review through Pull Requests
+- Consistent environments
+
+---
+
+# 15. Azure Virtual Network
+
+## Decision
+
+Deploy application resources inside a dedicated Virtual Network.
+
+## Why?
+
+Private networking improves security and allows managed Azure services to communicate securely.
+
+Benefits:
+
+- Network isolation
+- Improved security
+- Easier future expansion
+- Enterprise architecture alignment
+
+---
+
+# 16. Network Security Groups
+
+## Decision
+
+Protect Azure subnets using Network Security Groups.
+
+## Why?
+
+NSGs restrict unnecessary network traffic and enforce network-level security.
+
+Benefits:
+
+- Least privilege networking
+- Better compliance
+- Reduced attack surface
+
+---
+
+# 17. Azure Container Registry
+
+## Decision
+
+Use Azure Container Registry (ACR).
+
+## Why?
+
+Container images should be stored in a private enterprise registry.
+
+Benefits:
+
+- Secure image storage
+- Azure integration
+- Faster deployments
+- Image versioning
+
+---
+
+# 18. Azure Log Analytics Workspace
+
+## Decision
+
+Create a centralized Log Analytics Workspace.
+
+## Why?
+
+Logs from Azure services should be collected in a single location.
+
+Benefits:
+
+- Centralized logging
+- Operational monitoring
+- Easier troubleshooting
+- Azure Monitor integration
+
+---
+
+# 19. Azure Container Apps Environment
+
+## Decision
+
+Deploy the application into Azure Container Apps.
+
+## Why?
+
+Azure Container Apps provides managed containers without requiring Kubernetes management.
+
+Benefits:
+
+- Automatic scaling
+- HTTPS
+- Managed ingress
+- Revision management
+- Lower operational overhead
+
+---
+
+# 20. Azure PostgreSQL Flexible Server
+
+## Decision
+
+Use Azure Database for PostgreSQL Flexible Server.
+
+## Why?
+
+Managed database services reduce operational complexity.
+
+Benefits:
+
+- Automatic backups
+- Managed patching
+- High availability support
+- Better reliability
+
+---
+
+# 21. Private PostgreSQL Networking
+
+## Decision
+
+Deploy PostgreSQL without public network access.
+
+## Why?
+
+Databases should not be exposed directly to the Internet.
+
+Benefits:
+
+- Reduced attack surface
+- Private VNet communication
+- Improved compliance
+- Better enterprise security
 
 ---
 
 # Future Engineering Decisions
 
-The following architectural decisions will be implemented during the next phase of the assessment.
+The following improvements will be implemented in upcoming phases:
 
-- Azure Container Apps
 - Azure Key Vault
 - Managed Identity
-- Azure Database for PostgreSQL Flexible Server
-- Azure Monitor
-- Log Analytics Workspace
-- Terraform Infrastructure as Code
+- Secret Rotation
 - GitHub Actions CI/CD
+- Azure Monitor Alerts
+- Remote Terraform Backend
+- Autoscaling Policies
 - Azure RBAC
-- Private Networking
-
-These decisions will be documented after the infrastructure implementation is completed.
+- Production Monitoring
+- Disaster Recovery Strategy

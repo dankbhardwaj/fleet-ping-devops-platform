@@ -1,73 +1,54 @@
 services:
 
   app:
-
     build:
       context: .
       dockerfile: Dockerfile
 
+    container_name: fleet-ping-app
+
     ports:
       - "3000:3000"
 
-    restart: unless-stopped
+    env_file:
+      - .env.docker
 
     depends_on:
-
       db:
         condition: service_healthy
 
-    environment:
+    restart: unless-stopped
 
-      PORT: 3000
-
-      NODE_ENV: production
-
-      DB_HOST: db
-
-      DB_PORT: 5432
-
-      DB_NAME: vexar_fleet
-
-      DB_USER: vexaradmin
-
-      DB_PASSWORD: change_me
-
-      JWT_SECRET: change_this_secret
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   db:
+    image: postgres:15-alpine
 
-    image: postgres:15
+    container_name: fleet-ping-db
 
     restart: unless-stopped
 
     environment:
-
+      POSTGRES_USER: vexaradmin
+      POSTGRES_PASSWORD: change_me
       POSTGRES_DB: vexar_fleet
 
-      POSTGRES_USER: vexaradmin
-
-      POSTGRES_PASSWORD: change_me
-
     volumes:
-
       - pgdata:/var/lib/postgresql/data
-
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
+    expose:
+      - "5432"
+
     healthcheck:
-
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U vexaradmin -d vexar_fleet"
-        ]
-
+      test: ["CMD-SHELL", "pg_isready -U vexaradmin"]
       interval: 10s
-
       timeout: 5s
-
       retries: 5
 
 volumes:
-
   pgdata:

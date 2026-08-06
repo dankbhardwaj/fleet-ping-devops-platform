@@ -10,7 +10,7 @@ The Fleet Ping Service is a Node.js/Express backend responsible for:
 
 The repository was reviewed as if ownership of an existing production service had been transferred to a new DevOps & Cloud Infrastructure Engineer.
 
-The objective of this review was to identify production risks, improve operational readiness, increase security, and prepare the application for deployment on Azure.
+The objective of this review was to identify production risks, improve operational readiness, strengthen security, and prepare the application for deployment on Microsoft Azure using Infrastructure as Code.
 
 ---
 
@@ -23,9 +23,10 @@ Several critical issues were identified in the areas of:
 - Security
 - Database connectivity
 - Containerization
-- Operational readiness
+- Infrastructure
 - Deployment reliability
 - Configuration management
+- Cloud readiness
 
 Each issue was prioritized based on production impact.
 
@@ -33,11 +34,13 @@ Each issue was prioritized based on production impact.
 
 # Improvements Implemented
 
+---
+
 ## 1. Configuration Management
 
 ### Issue
 
-Sensitive configuration values were stored directly inside the application.
+Sensitive configuration values were stored directly inside the application source code.
 
 Examples included:
 
@@ -47,8 +50,8 @@ Examples included:
 ### Risk
 
 - Secret leakage
-- Environment-specific configuration impossible
-- Cannot integrate with Azure Key Vault
+- Difficult environment management
+- No cloud secret integration
 
 ### Improvement
 
@@ -62,7 +65,7 @@ Added:
 
 ### Result
 
-Configuration is now separated from application code and is ready for external secret management.
+Application configuration is now separated from source code and prepared for external secret management.
 
 ---
 
@@ -80,13 +83,13 @@ A new PostgreSQL connection was created for every request.
 
 ### Improvement
 
-Implemented a shared PostgreSQL connection pool using `pg.Pool`.
+Implemented PostgreSQL connection pooling using `pg.Pool`.
 
 ### Result
 
-- Better performance
-- Lower database overhead
-- Improved scalability
+- Lower latency
+- Better scalability
+- Efficient database utilization
 
 ---
 
@@ -94,21 +97,19 @@ Implemented a shared PostgreSQL connection pool using `pg.Pool`.
 
 ### Issue
 
-Application attempted to connect to PostgreSQL using `localhost`.
+Application attempted to connect to PostgreSQL using `localhost` from inside a Docker container.
 
 ### Risk
 
-Application failed when executed inside Docker because PostgreSQL was running in another container.
+Application could not communicate with the database container.
 
 ### Improvement
 
-Configured Docker networking using the service name (`db`).
-
-Introduced a dedicated Docker environment configuration.
+Configured Docker networking using the Compose service name (`db`).
 
 ### Result
 
-Reliable container-to-container communication.
+Reliable inter-container communication.
 
 ---
 
@@ -121,7 +122,7 @@ Database schema required manual creation.
 ### Risk
 
 - Slow onboarding
-- Deployment inconsistencies
+- Inconsistent deployments
 
 ### Improvement
 
@@ -133,7 +134,7 @@ Mounted `schema.sql` into:
 
 ### Result
 
-Database initializes automatically during container startup.
+Database schema initializes automatically during startup.
 
 ---
 
@@ -149,11 +150,11 @@ Critical SQL Injection vulnerability.
 
 ### Improvement
 
-Replaced dynamic SQL with parameterized PostgreSQL queries.
+Implemented PostgreSQL parameterized queries.
 
 ### Result
 
-User input is safely handled.
+User input is safely separated from SQL statements.
 
 ---
 
@@ -161,19 +162,19 @@ User input is safely handled.
 
 ### Issue
 
-Endpoints accepted incomplete request payloads.
+API endpoints accepted incomplete payloads.
 
 ### Risk
 
-Invalid data could reach the database.
+Invalid data could be inserted into the database.
 
 ### Improvement
 
-Added validation for required request fields.
+Added request validation for required fields.
 
 ### Result
 
-Improved API reliability.
+Improved API reliability and data integrity.
 
 ---
 
@@ -181,17 +182,17 @@ Improved API reliability.
 
 ### Issue
 
-Administrative endpoint was publicly accessible.
+Administrative APIs were publicly accessible.
 
 ### Risk
 
-Unauthorized users could retrieve all driver information.
+Unauthorized users could retrieve sensitive driver information.
 
 ### Improvement
 
 Implemented JWT authentication middleware.
 
-Protected:
+Protected endpoint:
 
 ```
 GET /api/admin/drivers
@@ -203,11 +204,11 @@ Administrative APIs now require a valid JWT.
 
 ---
 
-## 8. Health & Readiness Probes
+## 8. Health & Readiness Endpoints
 
 ### Issue
 
-Application exposed no operational endpoints.
+No operational health endpoints existed.
 
 ### Risk
 
@@ -220,11 +221,15 @@ Added:
 - `/health`
 - `/ready`
 
-The readiness endpoint verifies PostgreSQL connectivity.
+The readiness endpoint verifies PostgreSQL connectivity before reporting the service as ready.
 
 ### Result
 
-Application is compatible with Azure Container Apps and Kubernetes health probes.
+Compatible with:
+
+- Azure Container Apps
+- Kubernetes
+- Azure Load Balancer health probes
 
 ---
 
@@ -232,12 +237,11 @@ Application is compatible with Azure Container Apps and Kubernetes health probes
 
 ### Issue
 
-Original Dockerfile used:
+The original Dockerfile used:
 
 - latest image
 - root user
 - single-stage build
-- unnecessary exposed ports
 
 ### Improvement
 
@@ -245,7 +249,7 @@ Implemented:
 
 - Multi-stage build
 - Node.js 22 Alpine
-- Non-root user
+- Non-root container
 - Docker HEALTHCHECK
 - Optimized dependency installation
 
@@ -259,27 +263,160 @@ Smaller, faster and more secure container image.
 
 ### Issue
 
-Docker Compose lacked production practices.
+Docker Compose configuration lacked production practices.
 
 ### Improvement
 
-Added:
+Implemented:
 
-- restart policy
-- PostgreSQL health checks
-- internal networking
-- automatic schema initialization
-- separate Docker environment configuration
+- Restart policies
+- Health checks
+- Internal networking
+- Automatic schema initialization
+- Environment configuration
+- Dependency ordering
 
 ### Result
 
-Reliable local production-like environment.
+Reliable production-like local environment.
+
+---
+
+## 11. Terraform Infrastructure Foundation
+
+### Issue
+
+Cloud infrastructure had to be created manually.
+
+### Risk
+
+- Configuration drift
+- Manual deployment errors
+- No version control
+- Difficult disaster recovery
+
+### Improvement
+
+Created a Terraform project structure following Infrastructure as Code best practices.
+
+Implemented:
+
+- Terraform version constraints
+- Azure provider configuration
+- Variables
+- Locals
+- Outputs
+- Environment configuration
+- Modular directory structure
+
+### Result
+
+Azure infrastructure can now be deployed consistently using Terraform.
+
+---
+
+## 12. Azure Networking
+
+### Issue
+
+No production network architecture existed.
+
+### Improvement
+
+Provisioned:
+
+- Azure Virtual Network
+- Container Apps subnet
+- PostgreSQL subnet
+- Network Security Groups
+- Subnet delegations
+
+### Result
+
+Application and database are deployed within an isolated virtual network following Azure networking best practices.
+
+---
+
+## 13. Azure Container Registry
+
+### Issue
+
+No private image registry was available.
+
+### Improvement
+
+Provisioned Azure Container Registry (ACR).
+
+### Result
+
+Container images can be securely stored and deployed without relying on public registries.
+
+---
+
+## 14. Azure Log Analytics
+
+### Issue
+
+Centralized logging was unavailable.
+
+### Improvement
+
+Provisioned Azure Log Analytics Workspace.
+
+### Result
+
+Foundation established for centralized logging and monitoring.
+
+---
+
+## 15. Azure Database for PostgreSQL
+
+### Issue
+
+Application relied on a local PostgreSQL container.
+
+### Improvement
+
+Provisioned:
+
+- Azure Database for PostgreSQL Flexible Server
+- Private DNS Zone
+- Private DNS Link
+- Private networking
+- Application database
+
+### Result
+
+Database is cloud-hosted and isolated from the public internet.
+
+---
+
+## 16. Azure Container Apps
+
+### Issue
+
+Application deployment target was limited to Docker Compose.
+
+### Improvement
+
+Provisioned:
+
+- Azure Container Apps Environment
+- Azure Container App
+- Managed scaling
+- System Assigned Identity
+- ACR integration
+- Environment configuration
+
+### Result
+
+Application is prepared for cloud-native deployment on Azure Container Apps.
 
 ---
 
 # Current Production Readiness
 
-The service now includes:
+The application now includes:
 
 - Externalized configuration
 - PostgreSQL connection pooling
@@ -291,21 +428,32 @@ The service now includes:
 - Multi-stage Docker image
 - Non-root container
 - Docker health checks
-- Internal Docker networking
-- Automatic database initialization
+- Docker Compose hardening
+- Terraform Infrastructure as Code
+- Azure Resource Group
+- Azure Virtual Network
+- Azure Network Security Groups
+- Azure Container Registry
+- Azure Log Analytics Workspace
+- Azure Container Apps Environment
+- Azure PostgreSQL Flexible Server
+- Azure Container App
 
 ---
 
 # Remaining Work
 
-The following items will be completed in later phases of the assessment:
+The following production improvements remain:
 
-- Azure Infrastructure (Terraform)
 - Azure Key Vault integration
-- Azure Managed Identity
-- GitHub Actions CI/CD
-- Monitoring & Alerting
+- Managed Identity authentication
+- Remove hardcoded infrastructure secrets
+- GitHub Actions CI/CD pipeline
+- Terraform remote backend
+- Azure Monitor alerts
+- Diagnostic Settings
 - Structured JSON logging
+- Autoscaling policies
 - Graceful shutdown
 - Architecture diagram
 - Final technical report
@@ -314,6 +462,8 @@ The following items will be completed in later phases of the assessment:
 
 # Overall Assessment
 
-The application has progressed from a demonstration backend to a production-ready containerized service.
+The Fleet Ping Service has evolved from a demonstration backend into a secure, containerized, cloud-ready application.
 
-The remaining work focuses primarily on cloud infrastructure, deployment automation, monitoring, and Azure architecture rather than application-level improvements.
+Core application security, Docker hardening, and foundational Azure infrastructure have been implemented using Infrastructure as Code.
+
+The remaining work focuses on enterprise cloud operations, including secret management, deployment automation, observability, monitoring, and production governance before the platform is fully production-ready.
