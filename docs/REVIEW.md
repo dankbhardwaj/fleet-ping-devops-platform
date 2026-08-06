@@ -467,3 +467,13 @@ The Fleet Ping Service has evolved from a demonstration backend into a secure, c
 Core application security, Docker hardening, and foundational Azure infrastructure have been implemented using Infrastructure as Code.
 
 The remaining work focuses on enterprise cloud operations, including secret management, deployment automation, observability, monitoring, and production governance before the platform is fully production-ready.
+
+---
+
+## Next Phase
+
+The next implementation phase focuses on Continuous Integration and Continuous Deployment.
+
+The application infrastructure has already been defined using Terraform. The remaining work is to automate validation, container builds, infrastructure checks, and Azure deployment using GitHub Actions.
+
+This will complete the production deployment pipeline.

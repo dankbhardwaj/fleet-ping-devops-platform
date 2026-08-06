@@ -103,7 +103,22 @@ Completed work is retained for historical reference while upcoming work defines 
 
 # Phase 5 — CI/CD
 
-**Status:** Planned
+---
+
+# Sprint 6 - CI/CD Automation (In Progress)
+
+The next phase focuses on deployment automation.
+
+Planned implementation:
+
+- GitHub Actions CI pipeline
+- Docker image build automation
+- Terraform validation
+- Terraform formatting checks
+- Container image publishing to Azure Container Registry
+- Azure Container Apps deployment
+- Infrastructure deployment automation
+- Pull Request validation
 
 ### Tasks
 
