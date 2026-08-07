@@ -36,9 +36,9 @@ resource "azurerm_postgresql_flexible_server" "main" {
 
   private_dns_zone_id = azurerm_private_dns_zone.postgres.id
 
-  administrator_login = "fleetadmin"
+  administrator_login = var.postgres_admin_username
 
-  administrator_password = "ChangeMe@123456"
+  administrator_password = random_password.postgres_password.result
 
   zone = "1"
 
@@ -69,5 +69,16 @@ resource "azurerm_postgresql_flexible_server_database" "fleet" {
   charset = "UTF8"
 
   collation = "en_US.utf8"
+
+}
+
+
+resource "random_password" "postgres_password" {
+
+  length = 24
+
+  special = true
+
+  override_special = "!@#%^*-_"
 
 }

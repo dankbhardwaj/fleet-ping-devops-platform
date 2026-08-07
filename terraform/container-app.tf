@@ -1,3 +1,21 @@
+resource "azurerm_container_app_environment" "main" {
+
+  name = "${local.resource_prefix}-aca-env"
+
+  location = azurerm_resource_group.main.location
+
+  resource_group_name = azurerm_resource_group.main.name
+
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+
+  infrastructure_subnet_id = azurerm_subnet.container_apps.id
+
+  zone_redundancy_enabled = false
+
+  tags = local.common_tags
+
+}
+
 resource "azurerm_container_app" "main" {
 
   name = "${local.resource_prefix}-app"
@@ -96,7 +114,7 @@ resource "azurerm_container_app" "main" {
 
         name = "DB_USER"
 
-        value = "fleetadmin"
+        value = var.postgres_admin_username
 
       }
 
@@ -104,7 +122,7 @@ resource "azurerm_container_app" "main" {
 
         name = "DB_PASSWORD"
 
-        value = "ChangeMe@123456"
+        value = random_password.postgres_password.result
 
       }
 

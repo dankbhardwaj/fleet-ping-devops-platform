@@ -79,3 +79,10 @@ output "container_app_url" {
   value = azurerm_container_app.main.latest_revision_fqdn
 
 }
+output "postgres_admin_username" {
+
+  description = "PostgreSQL administrator username"
+
+  value = var.postgres_admin_username
+
+}

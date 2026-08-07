@@ -20,3 +20,12 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+variable "postgres_admin_username" {
+
+  description = "PostgreSQL administrator username"
+
+  type = string
+
+  default = "fleetadmin"
+
+}
