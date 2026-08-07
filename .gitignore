@@ -35,6 +35,14 @@ Thumbs.db
 *.tfstate
 *.tfstate.*
 terraform.tfvars
+crash.log
+override.tf
+override.tf.json
+*.tfplan
+.terraform.lock.hcl
+
+# Environment secrets
+environments/*/*.auto.tfvars
 
 # Docker
 docker-compose.override.yml

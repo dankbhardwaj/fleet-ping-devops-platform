@@ -2,494 +2,149 @@
 
 ## Purpose
 
-This document explains the engineering decisions made while improving the Fleet Ping Service for production deployment.
+This document explains the engineering decisions made while modernizing the Fleet Ping Service.
 
-Each decision was made by considering:
-
-- Security
-- Maintainability
-- Scalability
-- Operational simplicity
-- Reliability
-- Cost efficiency
-
-The goal is to document **why** architectural decisions were made instead of only documenting **what** was implemented.
+The goal was to improve security, scalability, maintainability, operational reliability, and cloud readiness.
 
 ---
 
-# 1. Configuration Management
+# 1. Environment Variables
 
-## Decision
+Environment-specific configuration should never be stored in source code.
 
-Use environment variables instead of hardcoded configuration.
-
-## Why?
-
-The original application stored database credentials and JWT secrets directly inside the source code.
-
-Hardcoded secrets:
-
-- expose credentials in source control
-- cannot be rotated easily
-- prevent environment-specific deployments
-- increase security risks
-
-## Alternatives Considered
-
-- Hardcoded configuration
-- Configuration files committed to Git
-
-Both were rejected because they expose sensitive information.
-
-## Production Approach
-
-Configuration is now externalized using environment variables.
-
-The design also prepares the application for Azure Key Vault integration.
+Using environment variables allows integration with Azure Key Vault and supports multiple deployment environments.
 
 ---
 
-# 2. PostgreSQL Connection Pool
+# 2. PostgreSQL Connection Pooling
 
-## Decision
+Creating a new connection for every request is inefficient.
 
-Use PostgreSQL connection pooling (`pg.Pool`).
-
-## Why?
-
-Creating a new database connection for every request does not scale.
-
-Connection pooling:
-
-- reduces latency
-- improves throughput
-- prevents connection exhaustion
-- improves application scalability
-
-## Alternatives Considered
-
-Creating a new PostgreSQL connection for every request.
-
-Rejected because it performs poorly under production workloads.
+Using `pg.Pool` reduces latency, improves throughput, and prevents connection exhaustion.
 
 ---
 
-# 3. Parameterized SQL Queries
+# 3. Parameterized Queries
 
-## Decision
-
-Replace dynamic SQL with parameterized queries.
-
-## Why?
-
-Parameterized queries eliminate SQL Injection attacks by separating SQL statements from user input.
-
-## Benefits
-
-- Improved application security
-- Database integrity protection
-- Secure coding best practices
+Parameterized queries eliminate SQL Injection risks by separating SQL statements from user input.
 
 ---
 
-# 4. Request Validation
+# 4. Docker Networking
 
-## Decision
+Containers communicate using Docker's internal DNS rather than localhost.
 
-Validate incoming request payloads before executing business logic.
-
-## Why?
-
-Invalid requests should never reach the database.
-
-Benefits include:
-
-- Better API reliability
-- Cleaner error handling
-- Reduced invalid data
-- More predictable behavior
+Using service names makes deployments portable and reliable.
 
 ---
 
-# 5. JWT Authentication
+# 5. Automatic Schema Initialization
 
-## Decision
-
-Protect administrative APIs using JWT authentication.
-
-## Why?
-
-Administrative endpoints should never be publicly accessible.
-
-JWT authentication provides:
-
-- Stateless authentication
-- Cloud-native compatibility
-- Horizontal scalability
-- Simpler deployment
-
-## Future Improvement
-
-Introduce Role-Based Access Control (RBAC).
+Mounting `schema.sql` into `/docker-entrypoint-initdb.d/` enables automatic database creation and simplifies onboarding.
 
 ---
 
-# 6. Health & Readiness Endpoints
+# 6. Multi-Stage Docker Builds
 
-## Decision
-
-Expose separate health and readiness endpoints.
-
-## Why?
-
-Health and readiness represent different operational states.
-
-### Health
-
-Indicates whether the application process is running.
-
-### Readiness
-
-Indicates whether the application is capable of serving production traffic.
-
-The readiness endpoint verifies PostgreSQL connectivity before returning READY.
-
-## Benefits
-
-Compatible with:
-
-- Azure Container Apps
-- Azure Kubernetes Service (AKS)
-- Docker HEALTHCHECK
-- Load Balancers
+Separating build and runtime stages produces smaller images, reduces attack surface, and speeds deployments.
 
 ---
 
-# 7. Multi-Stage Docker Build
+# 7. Non-Root Containers
 
-## Decision
-
-Use a multi-stage Docker build.
-
-## Why?
-
-Multi-stage builds separate dependency installation from the runtime image.
-
-Benefits:
-
-- Smaller image
-- Faster deployments
-- Reduced attack surface
-- Cleaner runtime image
+Running containers as a non-root user follows the principle of least privilege and improves security.
 
 ---
 
-# 8. Non-Root Container
+# 8. Health & Readiness Endpoints
 
-## Decision
-
-Run the application as a non-root user.
-
-## Why?
-
-Running containers as root increases the impact of container compromise.
-
-Following the principle of least privilege improves overall container security.
+Operational endpoints allow orchestration platforms to determine application health and readiness before routing traffic.
 
 ---
 
-# 9. Node.js Alpine Runtime
+# 9. Infrastructure as Code
 
-## Decision
-
-Use the official Node.js Alpine image.
-
-## Why?
-
-Compared to standard Node.js images, Alpine provides:
-
-- Smaller image size
-- Reduced attack surface
-- Faster downloads
-- Faster startup
+Terraform provides repeatable, version-controlled infrastructure deployment and reduces configuration drift.
 
 ---
 
-# 10. Docker Networking
+# 10. Virtual Network Isolation
 
-## Decision
-
-Use Docker service discovery instead of localhost.
-
-## Why?
-
-Containers communicate through Docker's internal network.
-
-Instead of:
-
-```
-DB_HOST=localhost
-```
-
-Docker containers use:
-
-```
-DB_HOST=db
-```
-
-This reflects production container networking.
+Application and database resources are placed in separate subnets with Network Security Groups to improve isolation.
 
 ---
 
-# 11. Environment Separation
+# 11. Azure Container Registry
 
-## Decision
-
-Maintain separate configurations for local development and Docker.
-
-## Why?
-
-Local execution and container execution require different database hosts.
-
-Local:
-
-```
-DB_HOST=localhost
-```
-
-Docker:
-
-```
-DB_HOST=db
-```
-
-Benefits:
-
-- Better portability
-- Easier onboarding
-- Reduced deployment mistakes
+Using ACR provides secure image storage and integrates directly with Azure Container Apps.
 
 ---
 
-# 12. Automatic Database Initialization
+# 12. GitHub Actions
 
-## Decision
-
-Automatically initialize PostgreSQL during container startup.
-
-## Why?
-
-A developer should be able to clone the repository and immediately start the application.
-
-Benefits:
-
-- Faster onboarding
-- Consistent environments
-- Repeatable deployments
+GitHub Actions enables automated validation, Docker builds, and Terraform checks for every code change.
 
 ---
 
-# 13. Docker Health Checks
+# 13. OpenID Connect (OIDC)
 
-## Decision
-
-Configure Docker health checks for both the application and PostgreSQL.
-
-## Why?
-
-Health checks allow container platforms to determine service health automatically.
-
-Benefits:
-
-- Automatic recovery
-- Improved reliability
-- Safer deployments
+OIDC removes the need for long-lived Azure credentials in GitHub by using short-lived tokens issued at deployment time.
 
 ---
 
-# 14. Infrastructure as Code
+# 14. Generated Credentials
 
-## Decision
+Terraform's `random_password` resource generates unique passwords during deployment.
 
-Provision Azure infrastructure using Terraform.
-
-## Why?
-
-Infrastructure should be version controlled exactly like application code.
-
-Benefits:
-
-- Version-controlled infrastructure
-- Repeatable deployments
-- Easier disaster recovery
-- Peer review through Pull Requests
-- Consistent environments
+This avoids hardcoded credentials and prepares the infrastructure for Azure Key Vault.
 
 ---
 
-# 15. Azure Virtual Network
+# 15. Azure Key Vault
 
 ## Decision
 
-Deploy application resources inside a dedicated Virtual Network.
+Use Azure Key Vault for centralized secret management instead of embedding credentials inside Terraform or application code.
 
 ## Why?
 
-Private networking improves security and allows managed Azure services to communicate securely.
+Azure Key Vault provides:
 
-Benefits:
-
-- Network isolation
-- Improved security
-- Easier future expansion
-- Enterprise architecture alignment
-
----
-
-# 16. Network Security Groups
-
-## Decision
-
-Protect Azure subnets using Network Security Groups.
-
-## Why?
-
-NSGs restrict unnecessary network traffic and enforce network-level security.
-
-Benefits:
-
-- Least privilege networking
-- Better compliance
-- Reduced attack surface
-
----
-
-# 17. Azure Container Registry
-
-## Decision
-
-Use Azure Container Registry (ACR).
-
-## Why?
-
-Container images should be stored in a private enterprise registry.
-
-Benefits:
-
-- Secure image storage
-- Azure integration
-- Faster deployments
-- Image versioning
-
----
-
-# 18. Azure Log Analytics Workspace
-
-## Decision
-
-Create a centralized Log Analytics Workspace.
-
-## Why?
-
-Logs from Azure services should be collected in a single location.
-
-Benefits:
-
-- Centralized logging
-- Operational monitoring
-- Easier troubleshooting
-- Azure Monitor integration
-
----
-
-# 19. Azure Container Apps Environment
-
-## Decision
-
-Deploy the application into Azure Container Apps.
-
-## Why?
-
-Azure Container Apps provides managed containers without requiring Kubernetes management.
-
-Benefits:
-
-- Automatic scaling
-- HTTPS
-- Managed ingress
-- Revision management
-- Lower operational overhead
-
----
-
-# 20. Azure PostgreSQL Flexible Server
-
-## Decision
-
-Use Azure Database for PostgreSQL Flexible Server.
-
-## Why?
-
-Managed database services reduce operational complexity.
-
-Benefits:
-
-- Automatic backups
-- Managed patching
-- High availability support
-- Better reliability
-
----
-
-# 21. Private PostgreSQL Networking
-
-## Decision
-
-Deploy PostgreSQL without public network access.
-
-## Why?
-
-Databases should not be exposed directly to the Internet.
-
-Benefits:
-
-- Reduced attack surface
-- Private VNet communication
+- Centralized secret storage
+- RBAC authorization
+- Secret rotation
+- Integration with Managed Identity
 - Improved compliance
-- Better enterprise security
 
----
+This aligns the infrastructure with enterprise Azure security practices.
 
----
+# 16. Remote Terraform State
 
----
+## Decision
 
-# Why GitHub Actions?
+Store Terraform state in Azure Blob Storage instead of the local filesystem.
 
-GitHub Actions provides native automation directly within the GitHub repository.
+## Why?
 
-Advantages include:
+Remote state provides:
 
-- Automated builds
-- Infrastructure validation
-- Consistent deployments
-- Artifact generation
-- Docker automation
-- Terraform automation
+- Team collaboration
+- State locking
+- Versioning
+- Backup
+- Improved reliability
 
-Using GitHub Actions ensures that every code change is validated before deployment, reducing operational risk and improving software quality.
+This approach aligns with enterprise Infrastructure as Code practices.
 
-# Future Engineering Decisions
+# Future Decisions
 
-The following improvements will be implemented in upcoming phases:
+The following architectural decisions will be implemented in future phases:
 
 - Azure Key Vault
 - Managed Identity
-- Secret Rotation
-- GitHub Actions CI/CD
-- Azure Monitor Alerts
-- Remote Terraform Backend
-- Autoscaling Policies
-- Azure RBAC
-- Production Monitoring
-- Disaster Recovery Strategy
+- Private Endpoints
+- Terraform Remote State
+- Azure Monitor
+- Application Insights
+- Deployment approvals
+- Disaster Recovery
