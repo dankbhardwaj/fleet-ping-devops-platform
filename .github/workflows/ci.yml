@@ -1,0 +1,168 @@
+name: Fleet Ping CI
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/**"
+
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  IMAGE_NAME: fleet-ping
+  NODE_VERSION: "22"
+  TERRAFORM_VERSION: "1.8.5"
+
+jobs:
+
+  build-test-validate:
+
+    name: Build, Validate & Package
+
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 20
+
+    steps:
+
+      #########################################################
+      # Checkout
+      #########################################################
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      #########################################################
+      # NodeJS
+      #########################################################
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      #########################################################
+      # Install Dependencies
+      #########################################################
+
+      - name: Install Dependencies
+        run: npm ci
+
+      #########################################################
+      # Docker Buildx
+      #########################################################
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      #########################################################
+      # Docker Build
+      #########################################################
+
+      - name: Build Docker Image
+
+        run: |
+
+          docker build \
+            --tag $IMAGE_NAME:${{ github.sha }} \
+            .
+
+      #########################################################
+      # Docker Inspect
+      #########################################################
+
+      - name: Verify Docker Image
+
+        run: |
+
+          docker image inspect \
+          $IMAGE_NAME:${{ github.sha }}
+
+      #########################################################
+      # Terraform
+      #########################################################
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      #########################################################
+      # Terraform Init
+      #########################################################
+
+      - name: Terraform Init
+
+        working-directory: terraform
+
+        run: terraform init -backend=false
+
+      #########################################################
+      # Terraform Format
+      #########################################################
+
+      - name: Terraform Format Check
+
+        working-directory: terraform
+
+        run: terraform fmt -check -recursive
+
+      #########################################################
+      # Terraform Validate
+      #########################################################
+
+      - name: Terraform Validate
+
+        working-directory: terraform
+
+        run: terraform validate
+
+      #########################################################
+      # Upload Terraform
+      #########################################################
+
+      - name: Upload Terraform Files
+
+        uses: actions/upload-artifact@v4
+
+        with:
+
+          name: terraform
+
+          path: terraform/
+
+      #########################################################
+      # Upload Dockerfile
+      #########################################################
+
+      - name: Upload Dockerfile
+
+        uses: actions/upload-artifact@v4
+
+        with:
+
+          name: dockerfile
+
+          path: Dockerfile
+
+      #########################################################
+      # Upload Documentation
+      #########################################################
+
+      - name: Upload Documentation
+
+        uses: actions/upload-artifact@v4
+
+        with:
+
+          name: docs
+
+          path: docs/

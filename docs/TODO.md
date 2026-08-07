@@ -259,3 +259,16 @@ Planned implementation:
 - **Phase 2:** ✅ Complete
 - **Phase 3:** ~80% Complete
 - **Overall Assessment Progress:** ~70%
+
+## Next Sprint
+
+Deployment Automation
+
+Remaining work:
+
+- Azure Login
+- Azure Container Registry push
+- Terraform Plan
+- Terraform Apply
+- Azure Container Apps deployment
+- Release workflow

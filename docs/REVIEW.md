@@ -414,6 +414,39 @@ Application is prepared for cloud-native deployment on Azure Container Apps.
 
 ---
 
+---
+
+## 11. Continuous Integration Pipeline
+
+### Issue
+
+The repository required manual verification before deployment.
+
+### Risk
+
+- Manual deployment errors
+- Inconsistent builds
+- Infrastructure drift
+- Delayed feedback
+
+### Improvement
+
+Implemented a GitHub Actions Continuous Integration pipeline.
+
+The pipeline automatically performs:
+
+- Dependency installation
+- Docker image build
+- Docker image validation
+- Terraform initialization
+- Terraform formatting validation
+- Terraform configuration validation
+- Artifact publishing
+
+### Result
+
+Every commit is automatically validated before deployment.
+
 # Current Production Readiness
 
 The application now includes:

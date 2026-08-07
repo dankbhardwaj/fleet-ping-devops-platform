@@ -462,20 +462,22 @@ Benefits:
 
 ---
 
+---
+
 # Why GitHub Actions?
 
-GitHub Actions provides native CI/CD integration directly from the source repository.
+GitHub Actions provides native automation directly within the GitHub repository.
 
-Benefits include:
+Advantages include:
 
-- Automated testing
-- Consistent deployments
+- Automated builds
 - Infrastructure validation
-- Docker image publishing
+- Consistent deployments
+- Artifact generation
+- Docker automation
 - Terraform automation
-- Pull request quality checks
 
-Using GitHub Actions keeps the entire deployment workflow version-controlled alongside the application code.
+Using GitHub Actions ensures that every code change is validated before deployment, reducing operational risk and improving software quality.
 
 # Future Engineering Decisions
 
