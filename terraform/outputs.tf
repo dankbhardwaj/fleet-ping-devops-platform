@@ -86,3 +86,14 @@ output "postgres_admin_username" {
   value = var.postgres_admin_username
 
 }
+output "key_vault_name" {
+
+  value = azurerm_key_vault.main.name
+
+}
+
+output "key_vault_uri" {
+
+  value = azurerm_key_vault.main.vault_uri
+
+}
