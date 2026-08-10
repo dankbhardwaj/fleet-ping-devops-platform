@@ -4,15 +4,15 @@ Production-oriented DevOps platform for a containerized fleet-tracking backend.
 
 This project demonstrates how a Node.js + PostgreSQL application can be developed locally, containerized, secured, validated, scanned, and prepared for deployment to Microsoft Azure using Infrastructure as Code and CI/CD practices.
 
-> **Assessment / Deployment Note**
+> **Assessment Note**
 >
-> The Azure infrastructure and deployment workflows are implemented as Terraform and GitHub Actions configuration.
+> The Azure infrastructure and deployment workflows are implemented using Terraform and GitHub Actions.
 >
-> A live Azure subscription was not available during implementation, so live Azure provisioning and deployment were not performed.
+> A live Azure deployment was **not performed** because an Azure subscription was not available during implementation.
 >
-> All locally testable components were implemented and validated locally, including the application, PostgreSQL, Docker, Docker Compose, Terraform validation, Git validation, container hardening, and Trivy security scanning.
+> All locally testable application, Docker, Terraform, Git, and container-security controls were validated locally.
 >
-> This README clearly distinguishes between **implemented as code** and **actually deployed**.
+> The repository intentionally distinguishes between **implemented as code** and **actually deployed**.
 
 ---
 
@@ -20,28 +20,24 @@ This project demonstrates how a Node.js + PostgreSQL application can be develope
 
 - [Project Overview](#project-overview)
 - [Problem Statement](#problem-statement)
-- [Project Objectives](#project-objectives)
 - [What This Project Demonstrates](#what-this-project-demonstrates)
 - [Architecture](#architecture)
 - [Application Flow](#application-flow)
-- [Health and Readiness Flow](#health-and-readiness-flow)
 - [DevOps Flow](#devops-flow)
 - [Technology Stack](#technology-stack)
 - [Repository Structure](#repository-structure)
 - [Application](#application)
 - [API Endpoints](#api-endpoints)
-- [Database](#database)
+- [Health and Readiness](#health-and-readiness)
 - [Docker Implementation](#docker-implementation)
 - [Docker Compose](#docker-compose)
 - [Container Security](#container-security)
 - [Terraform Infrastructure](#terraform-infrastructure)
-- [Terraform Environment Strategy](#terraform-environment-strategy)
+- [Environment Strategy](#environment-strategy)
 - [Azure Architecture](#azure-architecture)
 - [Security Architecture](#security-architecture)
-- [Application Security](#application-security)
 - [Secrets Management](#secrets-management)
 - [CI/CD](#cicd)
-- [GitHub OIDC](#github-oidc)
 - [Security Scanning](#security-scanning)
 - [Testing and Validation](#testing-and-validation)
 - [Monitoring and Observability](#monitoring-and-observability)
@@ -62,7 +58,7 @@ This project demonstrates how a Node.js + PostgreSQL application can be develope
 
 # Project Overview
 
-Fleet Ping Service is a backend service designed for a fleet-tracking platform.
+Fleet Ping Service is a backend service for a fleet-tracking platform.
 
 The application provides APIs for:
 
@@ -80,9 +76,10 @@ The DevOps implementation extends the application with:
 - Docker Compose
 - PostgreSQL
 - Terraform Infrastructure as Code
-- Azure Container Apps configuration
-- Azure Container Registry configuration
-- Azure Database for PostgreSQL Flexible Server configuration
+- Microsoft Azure infrastructure configuration
+- Azure Container Apps
+- Azure Container Registry
+- Azure Database for PostgreSQL Flexible Server
 - Azure Virtual Network
 - Network Security Groups
 - Azure Key Vault
@@ -97,7 +94,8 @@ The DevOps implementation extends the application with:
 - Log Analytics
 - Application Insights configuration
 - Environment-specific Terraform configuration
-- Production-oriented documentation
+- Production-oriented security controls
+- Operational documentation
 
 ---
 
@@ -122,60 +120,38 @@ A production-oriented platform should provide:
 - Cost awareness
 - Operational documentation
 - Security controls
-- Rollback and recovery planning
+- Rollback and troubleshooting procedures
 
 This project demonstrates how these requirements can be addressed using modern DevOps and cloud-native practices.
 
 ---
 
-# Project Objectives
-
-The main objectives of the project are:
-
-1. Containerize the Node.js application.
-2. Run the application and PostgreSQL locally using Docker Compose.
-3. Harden the runtime container.
-4. Implement health and readiness endpoints.
-5. Use PostgreSQL connection pooling.
-6. Prevent SQL injection using parameterized queries.
-7. Externalize environment-specific configuration.
-8. Define Azure infrastructure using Terraform.
-9. Separate development, staging, and production configuration.
-10. Design secure secret management using Azure Key Vault.
-11. Use Managed Identity and Azure RBAC.
-12. Implement CI/CD workflows using GitHub Actions.
-13. Add container vulnerability scanning using Trivy.
-14. Document deployment, security, operations, cost, and architecture.
-15. Validate all locally testable components before considering the project complete.
-
----
-
 # What This Project Demonstrates
 
-| Engineering Area | Implementation |
+| Engineering Layer | Implementation |
 |---|---|
 | Application | Node.js + Express |
 | Database | PostgreSQL |
 | Authentication | JWT |
 | Containerization | Docker |
 | Local Orchestration | Docker Compose |
-| Infrastructure as Code | Terraform |
+| Infrastructure | Terraform |
 | Cloud Platform | Microsoft Azure |
 | Container Platform | Azure Container Apps |
 | Image Registry | Azure Container Registry |
-| Database Platform | Azure Database for PostgreSQL Flexible Server |
+| Database Platform | PostgreSQL Flexible Server |
 | Networking | Azure VNet + Subnets + NSGs |
 | Secrets | Azure Key Vault |
 | Identity | Managed Identity |
 | Authorization | Azure RBAC |
 | CI/CD | GitHub Actions |
-| CI/CD Authentication | GitHub OIDC |
+| Azure Authentication | GitHub OIDC |
 | Security Scanning | Trivy |
 | Monitoring | Azure Monitor |
 | Logging | Log Analytics |
 | Application Telemetry | Application Insights |
-| Configuration | Environment Variables |
-| Documentation | Markdown |
+| DNS | Private DNS |
+| Documentation | Markdown documentation |
 
 ---
 
@@ -204,8 +180,8 @@ The main objectives of the project are:
                  v                   v            v
           Container Image          Azure       Key Vault
                  |                 VNet            |
-                 v                   |             |
-                ACR                  |       Managed Identity
+                 v                   |       Managed Identity
+                ACR                  |             |
                  |                   |             |
                  v                   v             |
          Azure Container Apps ---- PostgreSQL <----+
@@ -218,10 +194,13 @@ The main objectives of the project are:
    Azure Monitor     Log Analytics
         |
  Application Insights
+```
 
-The architecture is designed around managed Azure services while keeping infrastructure reproducible through Terraform.
+---
 
-Application Flow
+# Application Flow
+
+```text
 Client
   |
   v
@@ -248,25 +227,27 @@ Authentication       Request Validation
             |
             v
        HTTP Response
+```
 
-The application separates authentication, request validation, business logic, and database operations.
+---
 
-Health and Readiness Flow
+# Health and Readiness Flow
 
-The application exposes separate health and readiness endpoints.
+The application exposes separate health and readiness checks.
 
+```text
 Container Starts
       |
       v
 Application Starts
       |
       v
-/health
+   /health
       |
       +---- Application Process Healthy
       |
       v
-/ready
+    /ready
       |
       v
 PostgreSQL Connection Check
@@ -275,16 +256,19 @@ PostgreSQL Connection Check
       |
       v
 Application Ready
+```
 
-This separation allows an orchestration platform to distinguish between:
+This separation allows the container platform to distinguish between:
 
-Application process health
-Application readiness
-Database connectivity
-DevOps Flow
+- Application process health
+- Application readiness
+- Database connectivity
 
-The intended DevOps flow is:
+---
 
+# DevOps Flow
+
+```text
 Developer
     |
     v
@@ -320,52 +304,67 @@ Docker Build            Trivy
                |
                v
            Production
+```
 
-Because an Azure subscription was not available, the Azure deployment portion was not executed against live infrastructure.
+> The Azure deployment stages above represent the implemented target deployment architecture. They were not executed against a live Azure subscription during this assessment.
 
-The CI/CD configuration remains implemented as code.
+---
 
-Technology Stack
-Application
-Node.js
-Express
-PostgreSQL
-JWT
-JavaScript
-DevOps
-Docker
-Docker Compose
-Terraform
-Git
-GitHub
-GitHub Actions
-Azure
-Azure Resource Group
-Azure Virtual Network
-Azure Subnets
-Network Security Groups
-Azure Container Registry
-Azure Container Apps
-Azure Database for PostgreSQL Flexible Server
-Azure Key Vault
-Managed Identity
-Azure RBAC
-Private DNS
-Azure Monitor
-Log Analytics
-Application Insights
-Security
-JWT authentication
-Parameterized SQL
-Environment-based configuration
-Non-root container
-Multi-stage Docker build
-Trivy
-Azure Key Vault
-Managed Identity
-Azure RBAC
-GitHub OIDC
-Repository Structure
+# Technology Stack
+
+## Application
+
+- Node.js
+- Express
+- PostgreSQL
+- JWT
+- JavaScript
+
+## DevOps
+
+- Docker
+- Docker Compose
+- Terraform
+- Git
+- GitHub
+- GitHub Actions
+
+## Azure
+
+- Azure Resource Group
+- Azure Virtual Network
+- Azure Subnets
+- Network Security Groups
+- Azure Container Registry
+- Azure Container Apps
+- Azure Database for PostgreSQL Flexible Server
+- Azure Key Vault
+- Managed Identity
+- Azure RBAC
+- Private DNS
+- Azure Monitor
+- Log Analytics
+- Application Insights
+
+## Security
+
+- JWT authentication
+- Parameterized SQL queries
+- Environment-based configuration
+- Non-root container
+- Multi-stage Docker build
+- Runtime npm removal
+- Trivy
+- Azure Key Vault
+- Managed Identity
+- RBAC
+- GitHub OIDC
+
+---
+
+# Repository Structure
+
+```text
 devops-assessment/
 │
 ├── .github/
@@ -439,7 +438,11 @@ devops-assessment/
 ├── schema.sql
 ├── server.js
 └── README.md
-Application
+```
+
+---
+
+# Application
 
 The backend is implemented using Node.js and Express.
 
@@ -447,101 +450,97 @@ The application uses PostgreSQL as its persistent data store.
 
 Database connections are managed through PostgreSQL connection pooling.
 
-Using a connection pool avoids creating a new database connection for every request and improves application efficiency.
+Connection pooling avoids creating a new database connection for every request and improves application efficiency.
 
-The application also validates required environment variables before starting.
+The application also externalizes environment-specific configuration rather than hardcoding it into source code.
 
-API Endpoints
+---
+
+# API Endpoints
 
 The application includes endpoints for:
 
-Health
+## Health
+
+```text
 GET /health
+```
 
 Used to determine whether the application process is running.
 
-Readiness
+## Readiness
+
+```text
 GET /ready
+```
 
 Used to determine whether the application can communicate with PostgreSQL.
 
-Authentication
+## Authentication
 
 Authentication APIs are used to obtain JWT credentials.
 
-Fleet APIs
+## Fleet APIs
 
 Fleet-related APIs handle vehicle and telemetry operations.
 
-Administration
+## Administration
 
 Protected administrative endpoints require JWT authentication.
 
-Health and Readiness
-Health Response
+---
+
+# Health and Readiness
+
+## Health Response
+
+```json
 {
   "status": "UP",
   "service": "fleet-ping-service",
   "timestamp": "..."
 }
-Readiness Response
+```
+
+## Readiness Response
+
+```json
 {
   "status": "READY",
   "database": "connected"
 }
+```
 
 The readiness endpoint verifies database connectivity before the application is considered ready.
 
-Database
+---
 
-PostgreSQL is used as the application's relational database.
-
-The local environment uses:
-
-PostgreSQL 15 Alpine
-
-The production target architecture uses:
-
-Azure Database for PostgreSQL Flexible Server
-
-The application uses connection pooling.
-
-Example architecture:
-
-Fleet Ping Application
-        |
-        v
-   pg.Pool
-        |
-        v
-   PostgreSQL
-
-The database schema is initialized automatically in the Docker Compose environment.
-
-Docker Implementation
+# Docker Implementation
 
 The application uses a multi-stage Docker build.
 
-Build Stage
+## Build Stage
 
 The builder stage:
 
-Uses Node.js Alpine
-Installs production dependencies
-Copies application source
-Prepares the application runtime
-Runtime Stage
+- Uses Node.js Alpine
+- Installs production dependencies
+- Copies application source
+- Creates the application filesystem
+
+## Runtime Stage
 
 The runtime stage:
 
-Uses a Node.js Alpine base
-Copies the required application files
-Creates a dedicated application user
-Removes npm from the runtime image
-Runs the application as a non-root user
+- Uses a Node.js Alpine runtime
+- Copies the application from the builder stage
+- Creates a dedicated application user
+- Removes npm from the runtime image
+- Runs the application as a non-root user
 
 Conceptually:
 
+```text
 Node.js Base Image
        |
        v
@@ -559,10 +558,15 @@ Node.js Base Image
        |
        v
    Fleet Ping Service
-Docker Compose
+```
+
+---
+
+# Docker Compose
 
 Docker Compose provides the local application environment.
 
+```text
 Docker Compose
       |
       +------------------+
@@ -574,41 +578,41 @@ Fleet Ping App       PostgreSQL
                |
                v
         Docker Network
+```
 
-The application communicates with PostgreSQL using the Docker Compose service name instead of localhost.
+The application communicates with PostgreSQL using the Docker Compose service name rather than `localhost`.
 
-Example:
+This makes the local architecture closer to a containerized production environment.
 
-DB_HOST=db
+---
 
-This reflects how containerized services communicate in a networked environment.
+# Container Security
 
-Container Security
-
-The final runtime image was hardened to reduce unnecessary attack surface.
+The final runtime image was hardened to reduce its attack surface.
 
 Implemented controls include:
 
-Multi-stage Docker build
-Alpine-based runtime
-Non-root user
-npm removed from runtime image
-Docker health check
-Production dependency installation
-Reduced runtime contents
+- Multi-stage Docker build
+- Alpine-based runtime
+- Non-root user
+- npm removed from runtime image
+- Docker health check
+- Production dependency installation
+- Reduced runtime contents
 
-The runtime container was verified to run using a dedicated application user.
+The runtime container was explicitly verified to run as a dedicated application user.
 
-The runtime image was also verified to no longer contain npm.
+The runtime image was also verified to no longer contain the `npm` executable.
 
-This is important because npm is not required to execute the production Node.js application.
+---
 
-Terraform Infrastructure
+# Terraform Infrastructure
 
 Infrastructure is defined using Terraform.
 
 The Terraform configuration includes:
 
+```text
 Resource Group
      |
      v
@@ -632,29 +636,34 @@ Managed Identity
      |
      v
 Azure RBAC
+```
 
 Terraform resources include:
 
-Resource Group
-Virtual Network
-Subnets
-Network Security Groups
-Azure Container Registry
-Azure Container Apps Environment
-Azure Container App
-PostgreSQL Flexible Server
-PostgreSQL database
-Private DNS
-Azure Key Vault
-Managed Identity
-RBAC assignments
-Log Analytics
-Azure Monitor
-Alert rules
-Terraform Environment Strategy
+- Resource Group
+- Virtual Network
+- Subnets
+- Network Security Groups
+- Azure Container Registry
+- Azure Container Apps Environment
+- Azure Container App
+- PostgreSQL Flexible Server
+- PostgreSQL database
+- Private DNS
+- Azure Key Vault
+- Managed Identity
+- RBAC assignments
+- Log Analytics
+- Azure Monitor
+- Alert rules
 
-The repository contains separate environment configurations:
+---
 
+# Environment Strategy
+
+Three environment configurations are provided:
+
+```text
 terraform/environments/
 
 ├── dev/
@@ -665,59 +674,74 @@ terraform/environments/
 │
 └── prod/
     └── terraform.tfvars
+```
 
-This allows the same Terraform architecture to support different environments.
+The same Terraform architecture can therefore support:
 
-Example:
+```text
+Development
+    |
+    v
+Staging
+    |
+    v
+Production
+```
 
+Example validation command:
+
+```bash
 terraform -chdir=terraform plan \
   -var-file=environments/dev/terraform.tfvars
+```
 
-The environment-specific configuration controls values such as:
+Environment-specific values are separated from the reusable Terraform resource definitions.
 
-Environment name
-Project name
-Azure region
-PostgreSQL administrator username
-Subscription configuration
-Alert configuration
+---
 
-No real Azure credentials or secrets are stored in the repository.
-
-Terraform Validation
+# Terraform Validation
 
 Terraform formatting and validation were executed locally.
 
+```bash
 terraform -chdir=terraform fmt -check -recursive
+
 terraform -chdir=terraform validate
+```
 
 Validation result:
 
+```text
 Success! The configuration is valid.
+```
 
-No live Terraform apply was performed because an Azure subscription was not available.
+No live Azure apply was performed.
 
-Azure Architecture
+---
+
+# Azure Architecture
 
 The target Azure architecture uses managed services.
 
-Azure Container Apps
+## Azure Container Apps
 
-Azure Container Apps is intended to host the containerized Fleet Ping application.
+Hosts the containerized Fleet Ping application.
 
 Responsibilities include:
 
-Container execution
-HTTPS ingress
-Health monitoring
-Revision management
-Scaling
-Azure Container Registry
+- Container execution
+- HTTPS ingress
+- Health monitoring
+- Revision management
+- Scaling
 
-Azure Container Registry is intended to store application container images.
+## Azure Container Registry
 
-Target deployment flow:
+Stores application container images.
 
+Intended deployment flow:
+
+```text
 GitHub Actions
       |
       v
@@ -728,35 +752,40 @@ Azure Container Registry
       |
       v
 Azure Container Apps
-PostgreSQL Flexible Server
+```
 
-Azure Database for PostgreSQL Flexible Server is the target managed database platform.
+## PostgreSQL Flexible Server
+
+Provides managed PostgreSQL storage.
 
 The Terraform architecture separates application and database networking.
 
-Azure Key Vault
+## Azure Key Vault
 
-Azure Key Vault is intended to store sensitive configuration such as:
+Stores sensitive configuration such as:
 
-PostgreSQL password
-JWT secret
-Managed Identity
+- PostgreSQL password
+- JWT secret
 
-Managed Identity is used as the target Azure-native identity mechanism.
+## Managed Identity
 
-The purpose is to avoid embedding long-lived Azure credentials into application or deployment configuration.
+The application infrastructure is designed to use Azure Managed Identity instead of embedding long-lived Azure credentials.
 
-Azure RBAC
+## RBAC
 
 Azure RBAC is used to control access to:
 
-Azure Container Registry
-Azure Key Vault
-Other Azure resources
-Security Architecture
+- Azure Container Registry
+- Azure Key Vault
+- Other Azure resources
 
-Security is implemented across multiple layers.
+---
 
+# Security Architecture
+
+Security is implemented at multiple layers.
+
+```text
                  Internet
                     |
                     v
@@ -782,63 +811,63 @@ Security is implemented across multiple layers.
                    |
                    v
                   RBAC
+```
 
-The architecture follows layered security principles.
+---
 
-Application Security
-JWT Authentication
+# Application Security
+
+## JWT Authentication
 
 Protected APIs require valid JWT credentials.
 
-Example:
-
-Authorization: Bearer <JWT_TOKEN>
-
-Invalid or missing credentials result in unauthorized access.
-
-Parameterized SQL
+## Parameterized SQL
 
 SQL queries use parameters rather than directly concatenating user input.
 
 Example:
 
+```sql
 SELECT * FROM drivers WHERE phone = $1;
+```
 
-This separates SQL instructions from user-controlled values and reduces SQL injection risk.
+This separates user input from the SQL statement and reduces SQL injection risk.
 
-Environment Configuration
+## Environment Configuration
 
 Sensitive configuration is externalized from application source code.
 
 Examples include:
 
+```text
 DB_HOST
 DB_PORT
 DB_NAME
 DB_USER
 DB_PASSWORD
 JWT_SECRET
-Request Validation
+```
+
+## Request Validation
 
 Incoming requests are validated before business logic is executed.
 
-This improves:
+---
 
-API reliability
-Input handling
-Application stability
-Security posture
-Secrets Management
+# Secrets Management
 
 Production secrets are designed to be stored in Azure Key Vault.
 
-Examples include:
+Examples:
 
+```text
 postgres-password
 jwt-secret
+```
 
-Target architecture:
+Target flow:
 
+```text
 Azure Key Vault
       |
       v
@@ -849,26 +878,35 @@ Azure RBAC
       |
       v
 Container Application
+```
 
 No production secret should be committed to Git.
 
-For local development, environment files are used and excluded from version control.
+Local development uses environment configuration.
 
-CI/CD
+---
 
-GitHub Actions workflows are included for:
+# CI/CD
 
+GitHub Actions workflows are included under:
+
+```text
 .github/workflows/
 
 ├── ci.yml
 ├── deploy.yml
 └── security.yml
-CI Pipeline
+```
+
+---
+
+# CI Pipeline
 
 The CI workflow is designed to validate the application and infrastructure.
 
 Typical flow:
 
+```text
 Git Push
    |
    v
@@ -884,10 +922,15 @@ GitHub Actions
    |
    v
 Validation Complete
-Security Pipeline
+```
+
+---
+
+# Security Pipeline
 
 The security workflow includes Trivy-based container scanning.
 
+```text
 Docker Image
       |
       v
@@ -896,12 +939,15 @@ Docker Image
       +---- Vulnerability Scan
       |
       +---- Security Result
-Deployment Pipeline
+```
 
-The deployment workflow is designed for Azure deployment.
+---
 
-Target flow:
+# Deployment Pipeline
 
+The target deployment workflow is:
+
+```text
 Git Push
    |
    v
@@ -924,10 +970,13 @@ Terraform
    |
    v
 Azure Container Apps
+```
 
-The workflow is implemented as code but was not executed against live Azure infrastructure.
+Because an Azure subscription was not available, the final Azure deployment stages were not executed against live Azure resources.
 
-GitHub OIDC
+---
+
+# GitHub OIDC
 
 The deployment architecture is designed to use GitHub OpenID Connect with Azure.
 
@@ -935,6 +984,7 @@ The objective is to avoid storing long-lived Azure credentials inside GitHub Act
 
 Conceptually:
 
+```text
 GitHub Actions
       |
       v
@@ -945,197 +995,209 @@ Azure Identity
       |
       v
 Azure Resources
+```
 
 This provides a more secure authentication model for CI/CD.
 
-Because there was no Azure subscription available, the live federation and deployment were not performed.
+---
 
-Security Scanning
+# Security Scanning
 
 Trivy was used to scan the final Docker image.
 
 Command:
 
+```bash
 trivy image \
   --scanners vuln \
   --severity HIGH,CRITICAL \
   devops-assessment-app:latest
+```
 
-The final hardened runtime image produced:
+Final scan result:
 
+```text
 Total: 0 (HIGH: 0, CRITICAL: 0)
+```
 
-The earlier scan identified vulnerabilities in packages bundled with npm inside the Node.js runtime image.
+An earlier scan identified vulnerabilities in packages bundled with npm inside the Node.js runtime image, including:
 
-Examples included:
-
+```text
 tar
 brace-expansion
 ip-address
 picomatch
 sigstore
+```
 
-Investigation showed these were not application dependencies.
+Investigation showed that these packages were not application dependencies.
 
-They were part of npm's bundled dependency tree inside the Node.js runtime image.
+They were part of npm installed inside the Node.js runtime image.
 
-The Dockerfile was therefore hardened by removing npm from the runtime stage.
+The Dockerfile was hardened by removing npm from the runtime stage because the running Node.js application does not require npm.
 
-After rebuilding the image, the final HIGH/CRITICAL vulnerability scan returned:
+The final runtime image was then rebuilt and scanned again.
 
-Total: 0 (HIGH: 0, CRITICAL: 0)
+Result:
 
-This demonstrates a practical container-hardening workflow:
+```text
+HIGH: 0
+CRITICAL: 0
+```
 
-Initial Scan
-     |
-     v
-Identify Vulnerabilities
-     |
-     v
-Determine Dependency Origin
-     |
-     v
-Remove Unnecessary Runtime Component
-     |
-     v
-Rebuild Image
-     |
-     v
-Rescan
-     |
-     v
-0 HIGH / CRITICAL
-Testing and Validation
+This reduced the final runtime vulnerability surface.
+
+---
+
+# Testing and Validation
 
 The project was validated using several independent checks.
 
-Node.js Syntax Validation
+---
+
+## Node.js Syntax Validation
 
 Command:
 
+```bash
 npm test
+```
 
 The test command validates:
 
+```text
 server.js
 config/db.js
 middleware/auth.js
+```
 
-The command completed successfully.
+---
 
-Docker Validation
+## Docker Validation
 
 Command:
 
+```bash
 docker compose up -d --build
+```
 
 Then:
 
+```bash
 docker compose ps
+```
 
-The application and PostgreSQL containers were verified as healthy.
+Both application and PostgreSQL containers were verified as healthy.
 
-Expected result:
+---
 
-fleet-ping-app    healthy
-fleet-ping-db     healthy
-Health Validation
+## Health Validation
 
 Command:
 
+```bash
 curl -i --max-time 10 http://localhost:3000/health
+```
 
 Expected:
 
+```text
 HTTP/1.1 200 OK
+```
 
 Example response:
 
+```json
 {
   "status": "UP",
   "service": "fleet-ping-service",
   "timestamp": "..."
 }
-Readiness Validation
+```
+
+---
+
+## Readiness Validation
 
 Command:
 
+```bash
 curl -i --max-time 10 http://localhost:3000/ready
+```
 
 Expected:
 
+```text
 HTTP/1.1 200 OK
+```
 
 Example:
 
+```json
 {
   "status": "READY",
   "database": "connected"
 }
+```
 
-This confirms that the application can communicate with PostgreSQL.
+---
 
-Terraform Validation
+## Terraform Validation
 
 Commands:
 
+```bash
 terraform -chdir=terraform fmt -check -recursive
+
 terraform -chdir=terraform validate
+```
 
 Result:
 
+```text
 Success! The configuration is valid.
-Git Validation
+```
+
+---
+
+## Git Validation
 
 Command:
 
+```bash
 git diff --check
+```
 
 Result:
 
-No whitespace errors
-Final Validation
+```text
+No errors
+```
 
-The final validation sequence used:
+---
 
-npm test
-
-docker compose ps
-
-curl -i --max-time 10 http://localhost:3000/health
-
-curl -i --max-time 10 http://localhost:3000/ready
-
-terraform -chdir=terraform fmt -check -recursive
-
-terraform -chdir=terraform validate
-
-git diff --check
-
-The locally testable project components completed successfully.
-
-Monitoring and Observability
+# Monitoring and Observability
 
 The target Azure implementation includes:
 
-Azure Monitor
-Log Analytics
-Application Insights
-Alert rules
+- Azure Monitor
+- Log Analytics
+- Application Insights
+- Alert rules
 
 Monitoring objectives include:
 
-Application availability
-Container health
-Error rates
-Response times
-Database connectivity
-Container restarts
-Resource utilization
+- Application availability
+- Container health
+- Error rates
+- Response times
+- Database connectivity
+- Container restarts
+- Resource utilization
 
 Operational flow:
 
+```text
 Application
     |
     v
@@ -1153,319 +1215,427 @@ Log Analytics      Application Insights
               |
               v
            Alerts
+```
 
-These components are represented in Terraform but were not provisioned in a live Azure environment.
+---
 
-Cost Optimization
+# Cost Optimization
 
-The architecture was designed with development cost awareness.
+The architecture is designed with development cost awareness.
 
-Primary potential cost drivers include:
+Primary cost drivers include:
 
-PostgreSQL Flexible Server
-Container Apps compute
-Log Analytics ingestion
-Application Insights telemetry
-Container Registry
+- PostgreSQL Flexible Server
+- Container Apps compute
+- Log Analytics ingestion
+- Application Insights telemetry
+- Container Registry
 
 Development optimization strategies include:
 
-Burstable PostgreSQL SKU
-Scale-to-zero where appropriate
-Right-sized CPU and memory
-Log retention control
-Telemetry sampling
-Container image cleanup
-Destroying unused Terraform environments
+- Burstable PostgreSQL SKU
+- Container Apps scale-to-zero where appropriate
+- Right-sized CPU and memory
+- Log retention control
+- Telemetry sampling
+- Container image cleanup
+- Destroying unused Terraform environments
 
 Detailed cost considerations are documented in:
 
+```text
 docs/COST.md
-Deployment Status
-Locally Validated
+```
+
+---
+
+# Deployment Status
+
+## Locally Validated
 
 The following components were successfully validated locally:
 
-Node.js application
-PostgreSQL
-Docker
-Docker Compose
-Health endpoint
-Readiness endpoint
-Terraform formatting
-Terraform validation
-Git validation
-Trivy vulnerability scanning
-Multi-stage Docker build
-Non-root container
-npm removal from runtime image
-Environment configuration
-Repository structure
-Implemented as Code but Not Live-Deployed
+- Node.js application
+- PostgreSQL
+- Docker
+- Docker Compose
+- Health endpoint
+- Readiness endpoint
+- Terraform formatting
+- Terraform validation
+- Git validation
+- Trivy vulnerability scanning
+- Multi-stage Docker build
+- Non-root container
+- npm removal from runtime image
+- Environment configuration
+- Repository structure
 
-The following Azure components are represented in Terraform and CI/CD configuration but were not provisioned in a live Azure subscription:
+---
 
-Azure Resource Group
-Azure Virtual Network
-Azure Subnets
-Network Security Groups
-Azure Container Registry
-Azure Container Apps
-PostgreSQL Flexible Server
-Azure Key Vault
-Managed Identity
-Azure RBAC
-Log Analytics
-Azure Monitor
-Application Insights
-Azure deployment through GitHub Actions
-Why Was Azure Not Deployed?
+## Implemented as Code but Not Live-Deployed
+
+The following Azure components are represented in the Terraform and CI/CD implementation but were not provisioned in a live Azure subscription:
+
+- Azure Resource Group
+- Azure Virtual Network
+- Azure Subnets
+- Network Security Groups
+- Azure Container Registry
+- Azure Container Apps
+- PostgreSQL Flexible Server
+- Azure Key Vault
+- Managed Identity
+- Azure RBAC
+- Log Analytics
+- Azure Monitor
+- Application Insights
+- Azure deployment through GitHub Actions
+
+---
+
+# Why Azure Was Not Deployed
 
 A live Azure subscription was not available during implementation.
 
-Therefore, this project does not claim that Azure infrastructure was actually deployed.
+Therefore, no claim is made that these Azure resources were actually deployed.
 
-The project intentionally distinguishes between:
+This project intentionally distinguishes between:
 
+```text
 Implemented as Code
         |
         v
 Validated Locally
         |
         X
-Live Azure Deployment
+No Live Azure Apply
+```
 
-This distinction is important for technical accuracy.
+This makes the assessment reproducible and avoids representing unperformed cloud operations as completed.
 
-AI Assistance
+---
+
+# AI Assistance
 
 AI assistance was used as a development and documentation aid during the project.
 
-AI Tool
+## AI Tool
 
-ChatGPT
+**ChatGPT**
 
 AI assistance was used for:
 
-DevOps architecture discussion
-Terraform structure review
-Docker hardening analysis
-CI/CD workflow design
-Documentation structure
-Troubleshooting
-Security-review reasoning
-README preparation
-Engineering decision explanation
-Interview-oriented project explanation
+- DevOps architecture discussion
+- Terraform structure review
+- Docker hardening analysis
+- CI/CD workflow design
+- Documentation structure
+- Troubleshooting
+- Security-review reasoning
+- README preparation
+- Engineering decision explanations
+- Interview-oriented project explanation
 
 AI was used as an engineering assistant.
 
-Implementation commands, local testing, Docker builds, Terraform validation, container hardening, and security scanning were executed and verified in the local development environment.
+The actual implementation commands, local application testing, Docker builds, Terraform validation, Git validation, and security scanning were executed and verified in the local development environment.
 
-Security Tool
+## Security Tool
 
-Trivy
+**Trivy**
 
-Trivy is not an AI tool.
+Trivy is **not an AI tool**.
 
 It was used specifically for:
 
-Container vulnerability scanning
-HIGH/CRITICAL vulnerability detection
-Security validation of the final Docker image
-Documentation
+- Container vulnerability scanning
+- HIGH/CRITICAL vulnerability detection
+- Security validation of the final Docker image
 
-Detailed documentation is available under docs/.
+---
 
-Document	Purpose
-ARCHITECTURE.md	Architecture and infrastructure design
-COST.md	Cost estimation and optimization
-DECISIONS.md	Engineering decisions
-DEPLOYMENT.md	Deployment procedures
-REPORT.md	Project implementation report
-REVIEW.md	Implementation review
-RUNBOOK.md	Operations and troubleshooting
-SECURITY.md	Security architecture
-TODO.md	Future improvements
-Screenshots
+# Documentation
+
+Detailed documentation is available under `docs/`.
+
+| Document | Purpose |
+|---|---|
+| `ARCHITECTURE.md` | Architecture and infrastructure design |
+| `COST.md` | Cost estimation and optimization |
+| `DECISIONS.md` | Engineering decisions |
+| `DEPLOYMENT.md` | Deployment procedures |
+| `REPORT.md` | Project implementation report |
+| `REVIEW.md` | Implementation review |
+| `RUNBOOK.md` | Operations and troubleshooting |
+| `SECURITY.md` | Security architecture |
+| `TODO.md` | Future improvements |
+
+---
+
+# Screenshots
 
 The following screenshots provide evidence of the locally validated implementation.
 
-1. Project Structure
+> All screenshots are stored inside the repository under [`docs/images/`](docs/images/).
+
+---
+
+## 1. Project Structure
 
 Shows the project organization, application code, Terraform infrastructure, CI/CD workflows, and documentation.
 
-2. Application Syntax Validation
+![Project Structure](docs/images/01-project-structure.png)
+
+---
+
+## 2. Application Syntax Validation
 
 Node.js application files were syntax-checked using the project's test command.
 
-3. Docker Compose Health
+![Application Syntax Validation](docs/images/02-application-syntax-check.png)
+
+---
+
+## 3. Docker Compose Health
 
 Both the Fleet Ping application and PostgreSQL containers are running successfully and report healthy status.
 
-4. Application Health Endpoint
+![Docker Compose Health](docs/images/03-docker-compose-healthy.png)
 
-The application successfully returns HTTP 200 from the /health endpoint.
+---
 
-5. Database Readiness
+## 4. Application Health Endpoint
 
-The /ready endpoint confirms that the application can successfully connect to PostgreSQL.
+The application successfully returns HTTP 200 from the `/health` endpoint.
 
-6. Terraform Validation
+![Application Health Endpoint](docs/images/04-health-endpoint.png)
+
+---
+
+## 5. Database Readiness
+
+The `/ready` endpoint confirms that the application can successfully connect to PostgreSQL.
+
+![Database Readiness](docs/images/05-readiness-database.png)
+
+---
+
+## 6. Terraform Validation
 
 Terraform formatting and configuration validation were successfully completed.
 
-7. Git Validation
+![Terraform Validation](docs/images/06-terraform-validation.png)
+
+---
+
+## 7. Git Validation
 
 Git whitespace validation completed without errors.
 
-8. Trivy Security Scan
+![Git Validation](docs/images/07-git-diff-check.png)
+
+---
+
+## 8. Trivy Security Scan
 
 The final hardened Docker image was scanned using Trivy.
 
-Result:
+Final result:
 
+```text
 Total: 0 (HIGH: 0, CRITICAL: 0)
+```
 
-9. Container Hardening
+![Trivy Security Scan](docs/images/08-trivy-security-scan.png)
+
+---
+
+## 9. Container Hardening
 
 The runtime image was verified to:
 
-Run as a non-root user
-Remove npm from the runtime image
+- Run as a non-root application user
+- Remove npm from the runtime image
 
-10. Final Validation
+![Container Hardening](docs/images/09-container-hardening.png)
+
+---
+
+## 10. Final Validation
 
 The final validation combines:
 
-Node.js checks
-Docker health
-Health endpoint
-Readiness endpoint
-Terraform validation
-Git validation
-Trivy security scanning
+- Node.js checks
+- Docker health
+- Health endpoint
+- Readiness endpoint
+- Terraform validation
+- Git validation
+- Trivy security scanning
 
-Production Roadmap
-Completed
-Application
-Environment variables
-PostgreSQL connection pooling
-Parameterized SQL
-Request validation
-JWT authentication
-Health endpoint
-Readiness endpoint
-Docker
-Multi-stage build
-Non-root runtime
-Health check
-Runtime hardening
-npm removal from runtime image
-Docker Compose environment
-Infrastructure as Code
-Terraform project structure
-Environment separation
-Azure networking configuration
-Container Apps configuration
-PostgreSQL configuration
-ACR configuration
-Key Vault configuration
-Managed Identity configuration
-RBAC configuration
-Monitoring configuration
-CI/CD
-GitHub Actions CI
-Security workflow
-Deployment workflow
-Terraform validation
-Docker build validation
-Trivy scanning
-Documentation
-Architecture documentation
-Deployment guide
-Security guide
-Operations runbook
-Cost documentation
-Engineering decisions
-Implementation report
-Production roadmap
-Planned Production Enhancements
-Azure
-Live Azure deployment
-Azure Container Registry image publishing
-Azure Container Apps deployment
-Production DNS
-HTTPS domain configuration
-Private endpoints where appropriate
-Production monitoring
-CI/CD
-GitHub OIDC federation with live Azure
-Protected production environment
-Deployment approvals
-Automated rollback
-Immutable SHA-based image deployment
-Security
-Microsoft Defender for Cloud
-Azure Policy
-Automated secret rotation
-Image signing
-SBOM generation
-Advanced security monitoring
-Reliability
-Autoscaling
-Database backup validation
-Disaster recovery testing
-Graceful shutdown
-Multi-region architecture where required
-Limitations
+![Final Validation](docs/images/10-final-validation.png)
+
+---
+
+# Production Roadmap
+
+## Completed
+
+### Application
+
+- Environment variables
+- PostgreSQL connection pooling
+- Parameterized SQL
+- SQL injection prevention
+- Request validation
+- JWT authentication
+- Health endpoint
+- Readiness endpoint
+
+### Docker
+
+- Multi-stage Docker build
+- Non-root runtime
+- Health check
+- Runtime hardening
+- npm removal from runtime image
+- Docker Compose environment
+
+### Infrastructure as Code
+
+- Terraform project structure
+- Environment separation
+- Azure networking configuration
+- Container Apps configuration
+- PostgreSQL configuration
+- ACR configuration
+- Key Vault configuration
+- Managed Identity configuration
+- RBAC configuration
+- Monitoring configuration
+
+### CI/CD
+
+- GitHub Actions CI
+- Security workflow
+- Deployment workflow
+- Terraform validation
+- Docker build validation
+- Trivy scanning
+
+### Documentation
+
+- Architecture documentation
+- Deployment guide
+- Security guide
+- Operations runbook
+- Cost documentation
+- Engineering decisions
+- Implementation report
+- Production roadmap
+
+---
+
+# Planned Production Enhancements
+
+## Azure
+
+- Live Azure deployment
+- Azure Container Registry image publishing
+- Azure Container Apps deployment
+- Production DNS
+- HTTPS domain configuration
+- Private endpoints where appropriate
+- Production monitoring
+
+## CI/CD
+
+- GitHub OIDC federation
+- Protected production environment
+- Deployment approvals
+- Automated rollback
+- Immutable SHA-based image deployment
+
+## Security
+
+- Microsoft Defender for Cloud
+- Azure Policy
+- Automated secret rotation
+- Image signing
+- SBOM generation
+- Advanced security monitoring
+
+## Reliability
+
+- Autoscaling
+- Database backup validation
+- Disaster recovery testing
+- Graceful shutdown
+- Multi-region architecture where required
+
+---
+
+# Limitations
 
 The current assessment implementation has the following limitations.
 
-No Live Azure Subscription
+## No Live Azure Subscription
 
 The Azure infrastructure could not be provisioned because a live Azure subscription was unavailable.
 
 Therefore:
 
-Terraform
-    |
-    v
+```text
+Terraform Code
+       |
+       v
 Validated Locally
-    |
-    X
+       |
+       X
 No Live Azure Apply
-No Live ACR Push
+```
+
+---
+
+## No Live ACR Push
 
 The container image was built and scanned locally but was not pushed to a real Azure Container Registry.
 
-No Live Container Apps Deployment
+---
+
+## No Live Container Apps Deployment
 
 The application was validated through Docker Compose locally rather than through a live Azure Container Apps environment.
 
-No Production Traffic
+---
+
+## No Production Traffic
 
 The application has not been tested against real production traffic or production-scale workloads.
 
 These limitations are intentionally documented rather than hidden.
 
-What I Would Do Next
+---
+
+# What I Would Do Next
 
 If an Azure subscription becomes available, the next implementation sequence would be:
 
-1. Configure Azure Subscription
+```text
+1. Configure Azure subscription
           |
           v
-2. Configure Terraform Remote Backend
+2. Configure Terraform remote backend
           |
           v
-3. Provision Development Infrastructure
+3. Provision development infrastructure
           |
           v
 4. Create Azure Container Registry
           |
           v
-5. Build and Push Immutable Container Image
+5. Push immutable container image
           |
           v
 6. Deploy Azure Container Apps
@@ -1477,166 +1647,268 @@ If an Azure subscription becomes available, the next implementation sequence wou
 8. Configure Managed Identity + RBAC
           |
           v
-9. Configure Monitoring
+9. Configure monitoring
           |
           v
 10. Configure GitHub OIDC
           |
           v
-11. Test CI/CD Deployment
+11. Test CI/CD deployment
           |
           v
-12. Validate Health / Readiness
+12. Validate health/readiness
           |
           v
-13. Configure Alerts
+13. Configure alerts
           |
           v
-14. Test Rollback
-          |
-          v
-15. Validate Disaster Recovery
-Interview Explanation
+14. Test rollback
+```
+
+---
+
+# Interview Explanation
 
 A concise explanation of the project:
 
-I built a production-oriented DevOps platform for a Node.js fleet-tracking application. I containerized the application using a multi-stage Docker build and ran it with PostgreSQL through Docker Compose for local development.
+> I built a production-oriented DevOps platform for a Node.js fleet-tracking application. I containerized the application using a multi-stage Docker build and ran it with PostgreSQL through Docker Compose for local development.
+>
+> For infrastructure, I created Terraform configurations for Azure Container Apps, Azure Container Registry, PostgreSQL Flexible Server, VNet, subnets, NSGs, Key Vault, Managed Identity, RBAC, and monitoring.
+>
+> I separated development, staging, and production Terraform configurations and added GitHub Actions workflows for CI, security scanning, and deployment.
+>
+> For security, I implemented JWT authentication, parameterized SQL queries, environment-based configuration, non-root containers, removal of npm from the runtime image, Azure Key Vault, Managed Identity, and RBAC.
+>
+> I also used Trivy to scan the final image. The final hardened image reported zero HIGH and CRITICAL vulnerabilities.
+>
+> I validated the application locally using Docker Compose, health and readiness endpoints, Terraform validation, Git checks, and container security scanning.
+>
+> I did not perform a live Azure deployment because an Azure subscription was not available, so I clearly separated locally validated implementation from Azure infrastructure that is implemented as code.
 
-For infrastructure, I created Terraform configurations for Azure Container Apps, Azure Container Registry, PostgreSQL Flexible Server, VNet, subnets, NSGs, Key Vault, Managed Identity, RBAC, and monitoring.
+---
 
-I separated development, staging, and production Terraform configurations and added GitHub Actions workflows for CI, security scanning, and deployment.
+# Key Engineering Decisions
 
-For security, I implemented JWT authentication, parameterized SQL queries, environment-based configuration, non-root containers, removal of npm from the runtime image, Azure Key Vault, Managed Identity, and RBAC.
+## Multi-stage Docker
 
-I also used Trivy to scan the final image. The final hardened image reported zero HIGH and CRITICAL vulnerabilities.
+Used to separate build dependencies from the runtime image and reduce the final image footprint.
 
-I validated the application locally using Docker Compose, health and readiness endpoints, Terraform validation, Git checks, and container security scanning.
-
-I did not perform a live Azure deployment because an Azure subscription was not available, so I clearly separated locally validated implementation from Azure infrastructure that is implemented as code.
-
-Key Engineering Decisions
-Multi-stage Docker
-
-Used to separate build dependencies from the runtime image and reduce the final image contents.
-
-Non-root Container
+## Non-root Container
 
 Used to reduce the privileges available to the application process.
 
-Remove npm From Runtime
+## Remove npm From Runtime
 
-The production application does not require npm at runtime.
+The running Node.js application does not require npm, so npm was removed from the runtime image.
 
-Removing it reduced unnecessary runtime components and removed vulnerabilities originating from npm's bundled dependencies.
+This also reduced the vulnerability surface discovered during Trivy scanning.
 
-PostgreSQL Connection Pooling
+## PostgreSQL Connection Pooling
 
-Used to efficiently manage database connections.
+Used to efficiently manage database connections instead of creating a new connection for every request.
 
-Parameterized SQL
+## Parameterized SQL
 
-Used to protect against SQL injection.
+Used to separate SQL statements from user input and reduce SQL injection risk.
 
-Terraform
+## Terraform
 
 Used to create repeatable and version-controlled infrastructure.
 
-Managed Identity
+## Managed Identity
 
-Used as the target Azure-native authentication mechanism instead of embedding long-lived Azure credentials.
+Used as the target Azure identity model to avoid embedding long-lived Azure credentials into the application.
 
-Azure Key Vault
+## Azure Key Vault
 
 Used as the target centralized secret-management system.
 
-GitHub OIDC
+## GitHub OIDC
 
 Used as the target authentication model for GitHub-to-Azure deployments without long-lived Azure credentials.
 
-Health and Readiness Separation
+## Health and Readiness Separation
 
 Used to distinguish application process health from database/application readiness.
 
-Environment Separation
+---
 
-Development, staging, and production configurations are separated so the same Terraform architecture can be reused across environments.
+# Final Project Status
 
-Final Project Status
-Component	Status
-Application	COMPLETE
-PostgreSQL	COMPLETE
-Docker	COMPLETE
-Docker Compose	COMPLETE
-Container Hardening	COMPLETE
-Health Checks	COMPLETE
-Readiness Checks	COMPLETE
-Terraform	VALIDATED
-Environment Separation	COMPLETE
-Trivy Security Scan	COMPLETE
-GitHub Actions	IMPLEMENTED
-Azure Infrastructure Code	IMPLEMENTED
-Azure Key Vault Configuration	IMPLEMENTED
-Managed Identity Configuration	IMPLEMENTED
-Azure RBAC Configuration	IMPLEMENTED
-Azure Monitoring Configuration	IMPLEMENTED
-Azure Live Deployment	NOT PERFORMED
-Production Traffic Testing	NOT PERFORMED
-Documentation	COMPLETE
-Screenshots	COMPLETE
-Final Validation Summary
+| Component | Status |
+|---|---|
+| Application | COMPLETE |
+| Docker | COMPLETE |
+| Docker Compose | COMPLETE |
+| Container Hardening | COMPLETE |
+| PostgreSQL | COMPLETE |
+| Health Checks | COMPLETE |
+| Readiness Checks | COMPLETE |
+| Terraform | VALIDATED |
+| Environment Separation | COMPLETE |
+| Trivy Security Scan | COMPLETE |
+| GitHub Actions | IMPLEMENTED |
+| Azure Infrastructure Code | IMPLEMENTED |
+| Azure Live Deployment | NOT PERFORMED |
+| Documentation | COMPLETE |
+| Screenshots | COMPLETE |
 
-The final local validation demonstrated:
+---
 
-Node.js Application
-        |
-        v
-Syntax Validation
-        |
-        v
-Docker Build
-        |
-        v
-Docker Compose
-        |
-        v
-PostgreSQL Healthy
-        |
-        v
-Application Healthy
-        |
-        v
-/health -> HTTP 200
-        |
-        v
-/ready -> HTTP 200
-        |
-        v
-Database Connected
-        |
-        v
-Terraform fmt
-        |
-        v
-Terraform validate
-        |
-        v
-Git diff --check
-        |
-        v
-Container Hardening
-        |
-        v
-Trivy Scan
-        |
-        v
-HIGH: 0
-CRITICAL: 0
-Author
+# Validation Summary
 
-Bhaskar Sharma
+The final local validation included:
+
+```text
+Node.js syntax validation       PASS
+Docker build                    PASS
+Docker Compose                  PASS
+Application container           HEALTHY
+PostgreSQL container            HEALTHY
+/health endpoint                HTTP 200
+/ready endpoint                 HTTP 200
+Database connectivity           PASS
+Terraform fmt                   PASS
+Terraform validate              PASS
+git diff --check                PASS
+Trivy HIGH vulnerabilities      0
+Trivy CRITICAL vulnerabilities  0
+Non-root container              VERIFIED
+npm runtime removal             VERIFIED
+```
+
+---
+
+# Repository Evidence
+
+The repository contains both implementation and supporting documentation.
+
+```text
+Application
+     |
+     +-- Node.js / Express
+     +-- PostgreSQL
+     +-- JWT
+     |
+     v
+Containerization
+     |
+     +-- Dockerfile
+     +-- Docker Compose
+     |
+     v
+Infrastructure
+     |
+     +-- Terraform
+     +-- Azure architecture
+     |
+     v
+Security
+     |
+     +-- Key Vault
+     +-- Managed Identity
+     +-- RBAC
+     +-- Trivy
+     +-- Non-root container
+     |
+     v
+CI/CD
+     |
+     +-- GitHub Actions
+     +-- CI
+     +-- Security
+     +-- Deployment
+     |
+     v
+Operations
+     |
+     +-- Health
+     +-- Readiness
+     +-- Monitoring
+     +-- Runbook
+     +-- Cost
+     +-- Security documentation
+```
+
+---
+
+# Author
+
+**Bhaskar Sharma**
 
 DevOps Engineer | AWS | Azure | Kubernetes | Terraform | CI/CD
 
 GitHub:
 
 https://github.com/dankbhardwaj
+
+---
+
+# Final Note
+
+This project is intentionally designed as a production-oriented DevOps assessment rather than a simple application deployment.
+
+The implementation demonstrates:
+
+- Application engineering
+- Containerization
+- Container hardening
+- Infrastructure as Code
+- Cloud architecture
+- Networking
+- Identity
+- Secrets management
+- CI/CD
+- Security scanning
+- Monitoring design
+- Operational readiness
+- Cost awareness
+- Technical documentation
+
+The Azure portion is implemented as infrastructure and deployment code, while the locally executable portions were actually built, tested, validated, and security-scanned.
+
+```text
+                    FLEET PING SERVICE
+
+                         Application
+                              |
+                              v
+                         Docker
+                              |
+                              v
+                      Docker Compose
+                              |
+                              v
+                       PostgreSQL
+                              |
+                              v
+                       Terraform
+                              |
+                              v
+                    Azure Architecture
+                              |
+             +----------------+----------------+
+             |                |                |
+             v                v                v
+          ACR          Container Apps      PostgreSQL
+             |                |                |
+             +----------------+----------------+
+                              |
+                              v
+                         Key Vault
+                              |
+                              v
+                      Managed Identity
+                              |
+                              v
+                           RBAC
+                              |
+                              v
+                       GitHub Actions
+                              |
+                              v
+                         Trivy Scan
+                              |
+                              v
+                    Production-Ready Design
+```
