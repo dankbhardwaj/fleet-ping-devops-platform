@@ -19,13 +19,35 @@ variable "environment" {
   description = "Deployment Environment"
   type        = string
   default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "stage", "prod"], var.environment)
+    error_message = "environment must be one of: dev, stage, prod."
+  }
 }
+
 variable "postgres_admin_username" {
-
   description = "PostgreSQL administrator username"
+  type        = string
+  default     = "fleetadmin"
+}
 
-  type = string
+variable "alert_email" {
+  description = "Email address for Azure Monitor alert notifications"
+  type        = string
+  default     = null
 
-  default = "fleetadmin"
+  validation {
+    condition = var.alert_email == null || can(
+      regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.alert_email)
+    )
 
+    error_message = "alert_email must be a valid email address or null."
+  }
+}
+variable "container_image" {
+  description = "Container image deployed to Azure Container Apps"
+  type        = string
+
+  default = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"
 }

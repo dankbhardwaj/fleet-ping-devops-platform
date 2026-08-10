@@ -1,48 +1,88 @@
 # ==========================
 # Node.js
 # ==========================
+
 node_modules/
 
+# ==========================
 # Environment Files
+# ==========================
+
 .env
 .env.local
 .env.development
 .env.production
 .env.docker
 
+# ==========================
 # Logs
+# ==========================
+
 logs/
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Coverage
+# ==========================
+# Test / Coverage
+# ==========================
+
 coverage/
 
+# ==========================
 # Build
+# ==========================
+
 dist/
 build/
 
+# ==========================
 # IDE
+# ==========================
+
 .vscode/
 .idea/
 
+# ==========================
 # OS Files
+# ==========================
+
 .DS_Store
 Thumbs.db
 
+# ==========================
 # Terraform
+# ==========================
+
+# Terraform generated/local files
 .terraform/
 *.tfstate
 *.tfstate.*
 terraform.tfvars
+*.tfplan
 crash.log
 override.tf
 override.tf.json
-*.tfplan
 .terraform.lock.hcl
 
-# Environment secrets
+# Keep assessment environment configuration files
+!terraform/environments/*/terraform.tfvars
+
+# Keep Terraform provider lock file tracked:
+# terraform/.terraform.lock.hcl
+
+# ==========================
+# Terraform Environment Secrets
+# ==========================
+
 environments/*/*.auto.tfvars
 
+# ==========================
 # Docker
+# ==========================
+
 docker-compose.override.yml
+
+# Security scan reports
+trivy-results.json

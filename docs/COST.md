@@ -1,285 +1,76 @@
-# Fleet Ping Service
+# Fleet Ping Service — Cost Estimation & Optimization Guide
 
-# Cost Estimation & Optimization Guide
-
-Version: 1.0
-
-Author: Bhaskar Sharma
-
-Cloud Platform: Microsoft Azure
-
-Infrastructure as Code: Terraform
+**Version:** 1.0
+**Author:** Bhaskar Sharma
+**Cloud Platform:** Microsoft Azure
+**Infrastructure as Code:** Terraform
 
 ---
 
-# Purpose
+## 1. Purpose
 
-This document provides an estimated monthly cost for running the Fleet Ping Service on Microsoft Azure.
+This document explains the expected Azure cost profile of the Fleet Ping Service and identifies the main cost drivers and optimization opportunities.
 
-The estimates are intended for planning and learning purposes. Actual costs will vary depending on region, workload, selected SKUs, storage, and log ingestion.
+The project is designed as a production-oriented DevOps assessment while keeping the development environment relatively small.
 
----
-
-# Costing Assumptions
-
-The following assumptions were used for the estimates:
-
-- Development environment
-- Central India region
-- Single Azure Container App
-- One PostgreSQL Flexible Server
-- Basic Azure Container Registry
-- Standard monitoring configuration
-- Moderate application traffic
+All cost figures in this document are **planning estimates only**. Actual Azure charges depend on region, resource configuration, workload, network traffic, storage consumption, monitoring ingestion, and Azure pricing changes.
 
 ---
 
-# Azure Resources
+## 2. Costing Assumptions
 
-| Resource | SKU | Estimated Monthly Cost |
-|----------|-----|-----------------------:|
-| Resource Group | Free | $0 |
-| Virtual Network | Free | $0 |
-| Network Security Groups | Free | $0 |
-| Azure Container Registry | Basic | ~$5 |
-| Azure Container Apps | Consumption | Usage Based |
-| PostgreSQL Flexible Server | B_Standard_B2s | ~$35–45 |
-| Azure Key Vault | Standard | <$1 |
-| Managed Identity | System Assigned | Free |
-| Log Analytics Workspace | PerGB2018 | Usage Based |
-| Application Insights | Workspace-based | Usage Based |
-| Azure Monitor | Standard | Usage Based |
+The development environment is based on the following configuration:
 
----
+- Azure region: Central India
+- One Azure Container Apps environment
+- One Azure Container App
+- Azure Container Registry Basic SKU
+- Azure Database for PostgreSQL Flexible Server
+- PostgreSQL burstable `B_Standard_B2s` SKU
+- 32 GiB database storage
+- Seven-day database backup retention
+- Azure Key Vault Standard
+- Log Analytics Workspace with 30-day retention
+- Application Insights
+- Azure Monitor metric alerts
+- Low to moderate development traffic
+- No large-scale data ingestion or high-volume telemetry
 
-# Estimated Development Cost
-
-Typical monthly cost:
-
-| Environment | Estimated Cost |
-|-------------|---------------:|
-| Development | ~$45–60 |
-| Test | ~$60–90 |
-| Production | Depends on workload |
-
-These values are approximate and intended as planning estimates rather than billing guarantees.
+The Terraform configuration supports separate `dev`, `stage`, and `prod` environment configurations.
 
 ---
 
-# Primary Cost Drivers
+## 3. Azure Resources and Cost Profile
 
-The largest contributors to monthly cost are typically:
-
-1. PostgreSQL Flexible Server
-2. Azure Container Apps compute usage
-3. Log Analytics data ingestion
-4. Application Insights telemetry
-5. Azure Container Registry
-
----
-
-# Cost Optimization
-
-## Azure Container Apps
-
-Recommendations:
-
-- Enable autoscaling.
-- Allow scale-to-zero for development workloads.
-- Configure minimum replicas appropriately.
-- Right-size CPU and memory allocations.
-
-Expected benefit:
-
-- Reduced compute cost during idle periods.
-- Lower development environment expenses.
+| Resource | Configuration | Cost Profile |
+|---|---|---|
+| Resource Group | Standard Azure resource group | No direct resource charge |
+| Virtual Network | `10.0.0.0/16` | No direct VNet charge |
+| Network Security Groups | Application and database NSGs | No direct NSG charge |
+| Azure Container Registry | Basic | Fixed/usage-related |
+| Azure Container Apps | 0.5 CPU / 1 GiB, 1–3 replicas | Usage based |
+| PostgreSQL Flexible Server | `B_Standard_B2s` | Major cost driver |
+| PostgreSQL Storage | 32 GiB | Usage/configuration based |
+| Azure Key Vault | Standard | Usage based |
+| Managed Identity | System Assigned | No separate identity charge |
+| Log Analytics | PerGB2018 | Usage based |
+| Application Insights | Workspace-based | Usage based |
+| Azure Monitor Alerts | Metric alerts | Usage based |
 
 ---
 
-## PostgreSQL
+## 4. Primary Cost Drivers
 
-Recommendations:
+The most important cost drivers for this architecture are:
 
-- Use burstable SKUs in development.
-- Select only the storage required.
-- Keep backup retention appropriate for the environment.
-- Stop or remove unused environments.
+### 4.1 PostgreSQL Flexible Server
 
-Expected benefit:
+PostgreSQL is expected to be one of the largest baseline costs because the database server is provisioned continuously.
 
-- Lower database costs while maintaining functionality.
+The current Terraform configuration uses:
 
----
-
-## Azure Container Registry
-
-Recommendations:
-
-- Use the Basic SKU for development.
-- Remove unused container images regularly.
-- Apply image retention policies.
-
-Expected benefit:
-
-- Reduced storage usage.
-- Easier registry maintenance.
-
----
-
-## Log Analytics
-
-Recommendations:
-
-- Configure suitable data retention.
-- Disable unnecessary diagnostic categories.
-- Monitor ingestion volume.
-
-Expected benefit:
-
-- Lower logging costs.
-
----
-
-## Application Insights
-
-Recommendations:
-
-- Sample telemetry where appropriate.
-- Avoid collecting unnecessary debug data in production.
-- Review telemetry usage regularly.
-
-Expected benefit:
-
-- Reduced monitoring costs while retaining useful operational insights.
-
----
-
-# Terraform Cost Management
-
-Terraform helps control cloud costs by:
-
-- Creating only required resources.
-- Version-controlling infrastructure.
-- Supporting repeatable deployments.
-- Making it easy to remove temporary environments.
-
-Useful commands:
-
-```bash
-terraform plan
-
-terraform apply
-
-terraform destroy
-```
-
-Destroy temporary development environments when they are no longer required.
-
----
-
-# Environment Strategy
-
-## Development
-
-Purpose:
-
-- Learning
-- Testing
-- Validation
-
-Recommendations:
-
-- Lowest suitable SKUs
-- Autoscaling enabled
-- Scale-to-zero where supported
-- Reduced monitoring retention
-
----
-
-## Staging
-
-Purpose:
-
-- Integration testing
-- Deployment validation
-
-Recommendations:
-
-- Production-like configuration
-- Moderate monitoring
-- Controlled access
-
----
-
-## Production
-
-Purpose:
-
-- Live workloads
-
-Recommendations:
-
-- Appropriate sizing based on demand
-- High availability where required
-- Full monitoring and alerting
-- Regular backup verification
-
----
-
-# Cost Monitoring
-
-Azure provides several tools for monitoring cloud expenditure.
-
-Recommended services:
-
-- Azure Cost Management
-- Azure Budgets
-- Azure Monitor
-- Log Analytics
-
-Suggested alerts:
-
-- Monthly budget threshold
-- Unexpected resource creation
-- High compute usage
-- Rapid log ingestion growth
-
----
-
-# Future Cost Improvements
-
-Potential enhancements include:
-
-- Reserved capacity where appropriate
-- Automated shutdown of non-production resources
-- Image lifecycle management
-- Scheduled scaling
-- Improved telemetry sampling
-- Ongoing resource rightsizing
-
----
-
-# Monthly Cost Summary
-
-| Category | Approximate Cost |
-|----------|-----------------:|
-| Compute | Medium |
-| Database | Medium |
-| Networking | Low |
-| Security | Low |
-| Monitoring | Variable |
-| Storage | Low |
-
-Estimated development environment total:
-
-**~$45–60 USD per month**
-
----
-
-# Cost Summary
-
-The Fleet Ping Service is designed to balance production-oriented architecture with reasonable operating costs.
-
-Using managed Azure services simplifies operations while Terraform provides consistent provisioning and straightforward cleanup of environments that are no longer needed.
-
-Regular cost reviews, monitoring, and rightsizing help keep the platform efficient as usage evolves.
+```text
+SKU: B_Standard_B2s
+Storage: 32 GiB
+Backup retention: 7 days
+Public network access: disabled

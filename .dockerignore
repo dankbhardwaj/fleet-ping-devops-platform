@@ -1,20 +1,27 @@
 .git
+.github
 .gitignore
 
 node_modules
+npm-debug.log*
+*.log
 
 docs
+terraform
 
 README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE
 
 .env
-
 .env.*
 
 coverage
-
 .vscode
-
 .idea
 
-*.log
+*.tfstate
+*.tfstate.*
+.terraform
+.terraform.lock.hcl

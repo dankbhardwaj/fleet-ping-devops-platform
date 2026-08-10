@@ -3,19 +3,13 @@
 #############################################
 
 output "resource_group_name" {
-
   description = "Azure Resource Group"
-
-  value = azurerm_resource_group.main.name
-
+  value       = azurerm_resource_group.main.name
 }
 
 output "resource_group_location" {
-
   description = "Azure Region"
-
-  value = azurerm_resource_group.main.location
-
+  value       = azurerm_resource_group.main.location
 }
 
 #############################################
@@ -23,19 +17,13 @@ output "resource_group_location" {
 #############################################
 
 output "container_registry_name" {
-
   description = "Azure Container Registry"
-
-  value = azurerm_container_registry.main.name
-
+  value       = azurerm_container_registry.main.name
 }
 
 output "container_registry_login_server" {
-
   description = "ACR Login Server"
-
-  value = azurerm_container_registry.main.login_server
-
+  value       = azurerm_container_registry.main.login_server
 }
 
 #############################################
@@ -43,15 +31,13 @@ output "container_registry_login_server" {
 #############################################
 
 output "log_analytics_workspace_name" {
-
-  value = azurerm_log_analytics_workspace.main.name
-
+  description = "Log Analytics workspace name"
+  value       = azurerm_log_analytics_workspace.main.name
 }
 
 output "log_analytics_workspace_id" {
-
-  value = azurerm_log_analytics_workspace.main.id
-
+  description = "Log Analytics workspace resource ID"
+  value       = azurerm_log_analytics_workspace.main.id
 }
 
 #############################################
@@ -59,21 +45,18 @@ output "log_analytics_workspace_id" {
 #############################################
 
 output "virtual_network_name" {
-
-  value = azurerm_virtual_network.main.name
-
+  description = "Virtual network name"
+  value       = azurerm_virtual_network.main.name
 }
 
 output "container_apps_subnet_id" {
-
-  value = azurerm_subnet.container_apps.id
-
+  description = "Container Apps subnet resource ID"
+  value       = azurerm_subnet.container_apps.id
 }
 
 output "database_subnet_id" {
-
-  value = azurerm_subnet.database.id
-
+  description = "PostgreSQL subnet resource ID"
+  value       = azurerm_subnet.database.id
 }
 
 #############################################
@@ -81,15 +64,13 @@ output "database_subnet_id" {
 #############################################
 
 output "container_apps_nsg_name" {
-
-  value = azurerm_network_security_group.container_apps.name
-
+  description = "Container Apps subnet NSG name"
+  value       = azurerm_network_security_group.container_apps.name
 }
 
 output "database_nsg_name" {
-
-  value = azurerm_network_security_group.database.name
-
+  description = "PostgreSQL subnet NSG name"
+  value       = azurerm_network_security_group.database.name
 }
 
 #############################################
@@ -97,21 +78,18 @@ output "database_nsg_name" {
 #############################################
 
 output "postgres_server_name" {
-
-  value = azurerm_postgresql_flexible_server.main.name
-
+  description = "PostgreSQL Flexible Server name"
+  value       = azurerm_postgresql_flexible_server.main.name
 }
 
 output "postgres_server_fqdn" {
-
-  value = azurerm_postgresql_flexible_server.main.fqdn
-
+  description = "PostgreSQL Flexible Server private FQDN"
+  value       = azurerm_postgresql_flexible_server.main.fqdn
 }
 
 output "postgres_database_name" {
-
-  value = azurerm_postgresql_flexible_server_database.fleet.name
-
+  description = "Application PostgreSQL database name"
+  value       = azurerm_postgresql_flexible_server_database.fleet.name
 }
 
 #############################################
@@ -119,15 +97,13 @@ output "postgres_database_name" {
 #############################################
 
 output "container_app_environment_name" {
-
-  value = azurerm_container_app_environment.main.name
-
+  description = "Container Apps environment name"
+  value       = azurerm_container_app_environment.main.name
 }
 
 output "container_app_environment_id" {
-
-  value = azurerm_container_app_environment.main.id
-
+  description = "Container Apps environment resource ID"
+  value       = azurerm_container_app_environment.main.id
 }
 
 #############################################
@@ -135,53 +111,44 @@ output "container_app_environment_id" {
 #############################################
 
 output "container_app_name" {
-
-  value = azurerm_container_app.main.name
-
+  description = "Container App HTTPS URL"
+  value       = "https://${azurerm_container_app.main.latest_revision_fqdn}"
 }
 
 output "container_app_url" {
-
-  value = azurerm_container_app.main.latest_revision_fqdn
-
+  description = "Container App HTTPS URL"
+  value       = "https://${azurerm_container_app.main.latest_revision_fqdn}"
 }
 
 #############################################
-# Azure Key Vault
+# Key Vault
 #############################################
 
 output "key_vault_name" {
-
-  value = azurerm_key_vault.main.name
-
+  description = "Azure Key Vault name"
+  value       = azurerm_key_vault.main.name
 }
 
 output "key_vault_uri" {
-
-  value = azurerm_key_vault.main.vault_uri
-
+  description = "Azure Key Vault URI"
+  value       = azurerm_key_vault.main.vault_uri
 }
 
 #############################################
-# Application Insights
+# Managed Identity
 #############################################
 
-output "application_insights_name" {
-
-  value = azurerm_application_insights.main.name
-
+output "managed_identity_name" {
+  description = "User-assigned managed identity name"
+  value       = azurerm_user_assigned_identity.main.name
 }
 
-output "application_insights_id" {
-
-  value = azurerm_application_insights.main.id
-
+output "managed_identity_client_id" {
+  description = "User-assigned managed identity client ID"
+  value       = azurerm_user_assigned_identity.main.client_id
 }
 
-output "application_insights_connection_string" {
-
-  sensitive = true
-
-  value = azurerm_application_insights.main.connection_string
-
+output "managed_identity_principal_id" {
+  description = "User-assigned managed identity principal ID"
+  value       = azurerm_user_assigned_identity.main.principal_id
 }

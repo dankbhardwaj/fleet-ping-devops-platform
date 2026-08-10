@@ -1,3 +1,7 @@
+# ==========================================
+# Fleet Ping Terraform Variables
+# ==========================================
+
 subscription_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
 location = "Central India"
@@ -5,3 +9,9 @@ location = "Central India"
 project_name = "fleet-ping"
 
 environment = "dev"
+
+postgres_admin_username = "fleetadmin"
+
+alert_email = null
+
+container_image = "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest"

@@ -1,130 +1,103 @@
-# Fleet Ping Service
+# Fleet Ping Service — Production Roadmap
 
-# Production Roadmap
+This document tracks the current implementation status and future improvements for the Fleet Ping Service.
+
+The roadmap is divided into:
+
+- Completed
+- Current Hardening
+- Planned
+- Future Enhancements
 
 ---
 
-# Completed
+# 1. Completed
 
-## Application
+## 1.1 Application
 
-- Environment variables
+- Environment variable validation
 - PostgreSQL connection pooling
-- SQL Injection prevention
-- Request validation
+- Parameterized SQL queries
+- Basic request validation
 - JWT authentication
-
----
-
-## Operations
-
+- Protected administrative endpoint
 - Health endpoint
 - Readiness endpoint
+- Controlled application error handling
 
 ---
 
-## Docker
+## 1.2 Docker
 
 - Multi-stage Docker build
-- Non-root container
-- Health checks
-- Docker Compose hardening
+- Node.js Alpine runtime image
+- Non-root container user
+- Docker HEALTHCHECK
+- Production-oriented runtime image
+- Docker Compose local development
+- Container configuration externalized through environment variables
 
 ---
 
-## Infrastructure
+## 1.3 Infrastructure
 
-- Resource Group
-- Virtual Network
-- Subnets
+Terraform provisions the main Azure platform components.
+
+Completed:
+
+- Azure Resource Group
+- Azure Virtual Network
+- Container Apps subnet
+- PostgreSQL subnet
+- Subnet delegation
 - Network Security Groups
+- NSG associations
 - Azure Container Registry
-- Log Analytics Workspace
-- Container Apps Environment
+- Azure Container Apps Environment
+- Azure Container App
 - PostgreSQL Flexible Server
-- Private DNS
-
----
-
-## CI/CD
-
-- GitHub Actions CI
-- Deployment workflow
-- Terraform validation
-- Docker build validation
-
----
-
-## Security
-
-- Generated PostgreSQL password
-- Configurable database administrator
-- Secret-ready Container App configuration
-Azure Key Vault
-
-Managed Identity
-
-RBAC Authorization
-
-Random Password Generation
-
-Key Vault Secrets
-
----
-
-# In Progress
-
-## Secret Management
-
+- PostgreSQL database
+- Private DNS Zone
+- Private DNS Virtual Network Link
 - Azure Key Vault
-- Managed Identity
-- Secret injection into Container Apps
-- Key Vault RBAC
-
----
-
-# Planned
-
-## Infrastructure
-
-- Private Endpoints
-- Remote Terraform Backend
-- Storage Account
-
----
-
-## Deployment
-
-- Azure Container Registry image push
-- Azure Container Apps deployment
-- GitHub OIDC federation
-- Deployment approvals
-
----
-
-## Observability
-
-- Azure Monitor
+- System Assigned Managed Identity
+- Azure RBAC
+- Log Analytics Workspace
 - Application Insights
-- Log Analytics dashboards
-- Alert rules
+- Azure Monitor diagnostic settings
+- Azure Monitor Action Group
+- CPU alert
+- Memory alert
 
 ---
 
-## Reliability
+# 2. Terraform
 
-- Autoscaling
-- Backup validation
-- Disaster Recovery
-- Graceful shutdown
+## Completed
 
----
+- Terraform provider configuration
+- Terraform version constraints
+- Terraform formatting
+- Terraform validation
+- Environment-specific variable files
+- Development environment configuration
+- Staging environment configuration
+- Production environment configuration
+- Common resource tags
+- Random ACR suffix generation
+- Random PostgreSQL password generation
+- Azure Storage remote backend configuration
+- Terraform outputs
+- Backend state separation by environment
 
+Example environment structure:
 
-
-## Documentation
-
-- Architecture Diagram
-- Deployment Guide
-- Operations Runbook
-- Disaster Recovery Guide
+```text
+terraform/
+├── environments/
+│   ├── dev/
+│   │   └── terraform.tfvars
+│   ├── stage/
+│   │   └── terraform.tfvars
+│   └── prod/
+│       └── terraform.tfvars

@@ -1,11 +1,11 @@
 {
   "name": "vexar-fleet-ping-service",
-  "version": "0.1.0",
-  "description": "VexarDrive Fleet Ping Service (assessment starter)",
+  "version": "1.0.0",
+  "description": "VexarDrive Fleet Ping Service - DevOps assessment application",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"no tests configured\""
+    "test": "node --check server.js && node --check config/db.js && node --check middleware/auth.js"
   },
   "dependencies": {
     "dotenv": "^17.4.2",

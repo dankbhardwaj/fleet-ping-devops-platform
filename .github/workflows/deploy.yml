@@ -1,126 +1,162 @@
 name: Deploy to Azure
 
 on:
-
   workflow_dispatch:
 
   push:
-
     branches:
-
       - main
 
 permissions:
-
   id-token: write
-
   contents: read
 
 env:
-
   IMAGE_NAME: fleet-ping
+  TERRAFORM_VERSION: "1.15.8"
+  TF_WORKING_DIR: terraform
+  ENVIRONMENT: dev
 
 jobs:
-
   deploy:
-
+    name: Deploy Fleet Ping
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
-    environment: production
+    environment: dev
 
     steps:
+      # ------------------------------------------
+      # Checkout
+      # ------------------------------------------
 
-      - name: Checkout
-
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
-
-        uses: actions/setup-node@v4
-
-        with:
-
-          node-version: 22
-
-          cache: npm
-
-      - name: Install Dependencies
-
-        run: npm ci
-
-      - name: Build Docker Image
-
-        run: |
-
-          docker build \
-            -t $IMAGE_NAME:${{ github.sha }} .
+      # ------------------------------------------
+      # Azure Authentication
+      # ------------------------------------------
 
       - name: Azure Login
-
         uses: azure/login@v2
-
         with:
-
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
-
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Login to Azure Container Registry
-
-        run: |
-
-          az acr login \
-            --name ${{ secrets.ACR_NAME }}
-
-      - name: Tag Docker Image
-
-        run: |
-
-          docker tag \
-            $IMAGE_NAME:${{ github.sha }} \
-            ${{ secrets.ACR_NAME }}.azurecr.io/$IMAGE_NAME:${{ github.sha }}
-
-      - name: Push Docker Image
-
-        run: |
-
-          docker push \
-            ${{ secrets.ACR_NAME }}.azurecr.io/$IMAGE_NAME:${{ github.sha }}
+      # ------------------------------------------
+      # Terraform
+      # ------------------------------------------
 
       - name: Setup Terraform
-
         uses: hashicorp/setup-terraform@v3
-
         with:
-
-          terraform_version: 1.8.5
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
 
       - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init \
+            -reconfigure \
+            -backend-config="key=fleet-ping-${ENVIRONMENT}.tfstate"
 
-        working-directory: terraform
-
-        run: terraform init
+      - name: Terraform Format Check
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check -recursive
 
       - name: Terraform Validate
-
-        working-directory: terraform
-
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
 
-      - name: Terraform Plan
+      # ------------------------------------------
+      # Initial Infrastructure
+      # ------------------------------------------
 
-        working-directory: terraform
-
-        run: terraform plan
-
-      - name: Deploy Container App
-
+      - name: Terraform Apply Infrastructure
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_environment: ${{ env.ENVIRONMENT }}
+          TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
         run: |
+          terraform apply \
+            -auto-approve \
+            -var-file="environments/${ENVIRONMENT}/terraform.tfvars"
 
-          az containerapp update \
-            --name fleet-ping-dev-app \
-            --resource-group fleet-ping-dev-rg \
-            --image \
-            ${{ secrets.ACR_NAME }}.azurecr.io/$IMAGE_NAME:${{ github.sha }}
+      # ------------------------------------------
+      # Build Application Image
+      # ------------------------------------------
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+            --tag $IMAGE_NAME:${{ github.sha }} \
+            .
+
+      # ------------------------------------------
+      # Get ACR Information
+      # ------------------------------------------
+
+      - name: Get ACR Login Server
+        id: acr
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "login_server=$(terraform output -raw container_registry_login_server)" >> "$GITHUB_OUTPUT"
+
+      # ------------------------------------------
+      # Login to ACR
+      # ------------------------------------------
+
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login \
+            --name "$(terraform -chdir=${TF_WORKING_DIR} output -raw container_registry_name)"
+
+      # ------------------------------------------
+      # Push Immutable Image
+      # ------------------------------------------
+
+      - name: Tag Docker Image
+        env:
+          ACR_LOGIN_SERVER: ${{ steps.acr.outputs.login_server }}
+        run: |
+          docker tag \
+            $IMAGE_NAME:${{ github.sha }} \
+            ${ACR_LOGIN_SERVER}/$IMAGE_NAME:${{ github.sha }}
+
+      - name: Push Docker Image
+        env:
+          ACR_LOGIN_SERVER: ${{ steps.acr.outputs.login_server }}
+        run: |
+          docker push \
+            ${ACR_LOGIN_SERVER}/$IMAGE_NAME:${{ github.sha }}
+
+      # ------------------------------------------
+      # Deploy Immutable Image
+      # ------------------------------------------
+
+      - name: Terraform Apply Application
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          TF_VAR_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_environment: ${{ env.ENVIRONMENT }}
+          TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
+          ACR_LOGIN_SERVER: ${{ steps.acr.outputs.login_server }}
+        run: |
+          terraform apply \
+            -auto-approve \
+            -var-file="environments/${ENVIRONMENT}/terraform.tfvars" \
+            -var="container_image=${ACR_LOGIN_SERVER}/${IMAGE_NAME}:${GITHUB_SHA}"
+
+      # ------------------------------------------
+      # Deployment Summary
+      # ------------------------------------------
+
+      - name: Show Deployment Outputs
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          echo "Container App:"
+          terraform output -raw container_app_name
+
+          echo "Container App URL:"
+          terraform output -raw container_app_url
